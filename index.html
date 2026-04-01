@@ -1432,7 +1432,9 @@ async function renderDashboard(contas, gastos, receitas, dividas) {
   const totalR = receitas.reduce((s,r)=>s+(r.valor||0),0);
   const totalG = gastos.reduce((s,g)=>s+(g.valor||0),0);
   const totalC = contas.reduce((s,c)=>s+(c.valor||0),0);
-  const totalExp = totalG + totalC;
+  // Dívidas: soma a parcela mensal das que ainda não foram quitadas
+  const totalD = dividas.filter(d=>(d.pagas||0)<(d.totalParc||1)).reduce((s,d)=>s+(d.parcela||0),0);
+  const totalExp = totalG + totalC + totalD;
   const saldo = totalR - totalExp;
 
   const heroEl = $('hero-saldo');
@@ -1477,12 +1479,22 @@ async function renderDashboard(contas, gastos, receitas, dividas) {
 
   // Próximas
   const todayD = new Date().getDate();
-  const upcoming = contas.filter(c=>c.status!=='paid'&&c.dia).map(c=>({...c,diff:c.dia-todayD})).sort((a,b)=>a.diff-b.diff).slice(0,4);
-  setHTML('upcoming-list', upcoming.length ? upcoming.map(c=>{
-    const {icon,bg} = catStyle(c.categoria);
-    const col = c.diff<0?'var(--expense)':c.diff<=3?'var(--dourado)':'var(--turquesa)';
-    const lbl = c.diff<0?`Atrasado ${Math.abs(c.diff)}d`:c.diff===0?'Hoje':`${c.diff}d`;
-    return `<div class="item"><div class="item-icon" style="background:${bg}">${icon}</div><div class="item-info"><div class="item-name">${c.nome}</div><div class="item-meta" style="color:${col}">${lbl}</div></div><div class="item-amount" style="color:var(--expense)">${fmtBRL(c.valor)}</div></div>`;
+  // Contas fixas não pagas com dia definido
+  const upContas = contas.filter(c=>c.status!=='paid'&&c.dia).map(c=>({
+    label: c.nome, sub: c.categoria, valor: c.valor, dia: c.dia, tipo: 'conta', id: c.id
+  }));
+  // Dívidas ativas (não quitadas) com dia definido
+  const upDividas = dividas.filter(d=>(d.pagas||0)<(d.totalParc||1)&&d.dia).map(d=>({
+    label: d.desc, sub: `Parcela ${(d.pagas||0)+1}/${d.totalParc||1}`, valor: d.parcela||0, dia: d.dia, tipo: 'divida', id: d.id
+  }));
+  const upcoming = [...upContas, ...upDividas]
+    .map(item=>({...item, diff: item.dia - todayD}))
+    .sort((a,b)=>a.diff-b.diff).slice(0,5);
+  setHTML('upcoming-list', upcoming.length ? upcoming.map(item=>{
+    const {icon,bg} = item.tipo==='divida' ? {icon:'🔁',bg:'rgba(155,58,74,.15)'} : catStyle(item.sub);
+    const col = item.diff<0?'var(--expense)':item.diff<=3?'var(--dourado)':'var(--turquesa)';
+    const lbl = item.diff<0?`Atrasado ${Math.abs(item.diff)}d`:item.diff===0?'Hoje':`${item.diff}d`;
+    return `<div class="item"><div class="item-icon" style="background:${bg}">${icon}</div><div class="item-info"><div class="item-name">${item.label}</div><div class="item-meta" style="color:${col}">${lbl} · ${item.sub}</div></div><div class="item-amount" style="color:var(--expense)">${fmtBRL(item.valor)}</div></div>`;
   }).join('') : '<div class="empty"><div class="text-muted">Nenhuma conta próxima ✓</div></div>');
 
   // Gráfico
@@ -1520,15 +1532,17 @@ async function renderChart() {
   }
   const saldos = [];
   for (const m of months) {
-    const [g,r,c] = await Promise.all([
+    const [g,r,c,dv] = await Promise.all([
       col('gastos').where('monthKey','==',m.key).get(),
       col('receitas').where('monthKey','==',m.key).get(),
       col('contas').get(),
+      col('dividas').get(),
     ]);
     const tG=g.docs.reduce((s,d)=>s+(d.data().valor||0),0);
     const tR=r.docs.reduce((s,d)=>s+(d.data().valor||0),0);
     const tC=c.docs.reduce((s,d)=>s+(d.data().valor||0),0);
-    saldos.push(tR-tG-tC);
+    const tD=dv.docs.map(d=>d.data()).filter(d=>(d.pagas||0)<(d.totalParc||1)).reduce((s,d)=>s+(d.parcela||0),0);
+    saldos.push(tR-tG-tC-tD);
   }
   const ctx=$('chart-canvas')?.getContext('2d');
   if (!ctx) return;
