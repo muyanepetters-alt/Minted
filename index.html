@@ -969,6 +969,10 @@ input, select, textarea { font-family: var(--font-body); outline: none; }
       <option value="overdue">Atrasado</option>
     </select>
   </div>
+  <div class="form-group" id="conta-responsaveis-wrap" style="display:none">
+    <label class="form-label">Quem paga esta conta?</label>
+    <div id="conta-responsaveis"></div>
+  </div>
   <button class="btn btn-primary btn-full" onclick="saveConta()">Salvar</button>
 </div>
 
@@ -1341,10 +1345,10 @@ function switchPanel(panel) {
   document.querySelectorAll('.bar-item').forEach(b => b.classList.toggle('active', b.dataset.panel===panel));
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id==='panel-'+panel));
 
-  if (panel==='perfil')  { renderPerfil(); loadSalConfig(); }
+  if (panel==='perfil')  { renderPerfil(); loadSalConfig(); renderCasa(); }
   if (panel==='planner') { renderPlanner(); }
   if (panel==='metas')   { loadMetas(); }
-  if (panel==='saida')   { setSaidaTab(_saidaTab); }
+  if (panel==='saida')  { setSaidaTab(_saidaTab||'contas'); }
 }
 
 // ── MÊS ───────────────────────────────────────
@@ -1758,11 +1762,12 @@ async function pagarParcela(id, pagas, total) {
 
 // ── SAÍDA TABS ────────────────────────────────
 function setSaidaTab(tab) {
-  _saidaTab = tab;
+  _saidaTab = tab || 'contas';
   ['contas','gastos','dividas'].forEach(t => {
-    const btn=$(`sub-tab-${t}`); const view=$(`saida-${t}`);
-    if(btn) btn.classList.toggle('active', t===tab);
-    if(view) view.style.display = t===tab?'block':'none';
+    const btn  = document.getElementById(`sub-tab-${t}`);
+    const view = document.getElementById(`saida-${t}`);
+    if (btn)  btn.classList.toggle('active', t === _saidaTab);
+    if (view) view.style.display = t === _saidaTab ? 'block' : 'none';
   });
 }
 
@@ -2263,6 +2268,243 @@ function startVoice() {
   rec.onerror=()=>toast('Não entendi. Tente de novo','error');
   rec.start();
 }
+
+
+// ════════════════════════════════════════════
+//  CASA
+// ════════════════════════════════════════════
+let _casaId = null;
+let _casaMembros = [];
+let _casaCodigo = '';
+
+async function renderCasa() {
+  if (!currentUser) return;
+  try {
+    const userDoc = await db.collection('users').doc(currentUser.uid).get();
+    const casaId  = (userDoc.data()||{}).casaId;
+    _casaId = casaId || null;
+    const casaVazia = document.getElementById('casa-vazia');
+    const casaAtiva = document.getElementById('casa-ativa');
+    if (!casaId) {
+      if (casaVazia) casaVazia.style.display = 'block';
+      if (casaAtiva) casaAtiva.style.display = 'none';
+      _casaMembros = [];
+      return;
+    }
+    const casaDoc = await db.collection('casas').doc(casaId).get();
+    if (!casaDoc.exists) {
+      if (casaVazia) casaVazia.style.display = 'block';
+      if (casaAtiva) casaAtiva.style.display = 'none';
+      return;
+    }
+    const casa = casaDoc.data();
+    _casaMembros = (casa.membros||[]).filter(m => m.uid !== currentUser.uid);
+    _casaCodigo  = casa.codigo || '';
+    if (casaVazia) casaVazia.style.display = 'none';
+    if (casaAtiva) casaAtiva.style.display = 'block';
+    const nomeEl   = document.getElementById('casa-nome-display');
+    const codigoEl = document.getElementById('casa-codigo-display');
+    if (nomeEl)   nomeEl.textContent   = casa.nome || '—';
+    if (codigoEl) codigoEl.textContent = casa.codigo || '—';
+    const membrosEl = document.getElementById('members-list');
+    if (membrosEl) {
+      const todos = casa.membros || [];
+      membrosEl.innerHTML = todos.map(m => {
+        const isMe = m.uid === currentUser.uid;
+        const init = (m.name||'?').charAt(0).toUpperCase();
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="width:40px;height:40px;border-radius:12px;background:var(--turquesa3);color:var(--turquesa);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px">${init}</div>
+          <div style="flex:1"><div style="font-weight:500;font-size:14px">${m.name||m.email||'—'}</div>
+          <div style="font-size:11px;color:var(--text3)">${m.email||''}</div></div>
+          ${isMe ? '<span style="font-size:11px;color:var(--text3)">Você</span>' : ''}
+        </div>`;
+      }).join('') || '<div class="text-muted">Só você por enquanto</div>';
+    }
+  } catch(e) { console.error('renderCasa erro:', e); }
+}
+
+async function criarCasa() {
+  const nome = document.getElementById('casa-nome-input')?.value.trim();
+  if (!nome) return toast('Digite o nome da Casa', 'error');
+  try {
+    const codigo  = generateCode();
+    const casaRef = await db.collection('casas').add({
+      nome, codigo, donoUid: currentUser.uid,
+      membros: [{ uid: currentUser.uid, name: currentUser.displayName||currentUser.email, email: currentUser.email, photo: currentUser.photoURL||null }],
+      createdAt: new Date().toISOString(),
+    });
+    await db.collection('users').doc(currentUser.uid).update({ casaId: casaRef.id });
+    _casaId = casaRef.id;
+    closeSheet('sheet-criar-casa');
+    toast('Casa criada! Compartilhe o código com sua família 🏠', 'success');
+    await renderCasa();
+  } catch(e) { toast('Erro ao criar Casa', 'error'); console.error(e); }
+}
+
+async function entrarNaCasa() {
+  const codigo = document.getElementById('casa-codigo-input')?.value.trim().toUpperCase();
+  if (!codigo) return toast('Digite o código', 'error');
+  try {
+    const snap = await db.collection('casas').where('codigo','==',codigo).limit(1).get();
+    if (snap.empty) return toast('Código não encontrado', 'error');
+    const casaDoc  = snap.docs[0];
+    const casaData = casaDoc.data();
+    if ((casaData.membros||[]).some(m => m.uid === currentUser.uid)) {
+      toast('Você já está nesta Casa!','info');
+      closeSheet('sheet-entrar-casa');
+      return;
+    }
+    const novoMembro = { uid: currentUser.uid, name: currentUser.displayName||currentUser.email, email: currentUser.email, photo: currentUser.photoURL||null };
+    await casaDoc.ref.update({ membros: firebase.firestore.FieldValue.arrayUnion(novoMembro) });
+    await db.collection('users').doc(currentUser.uid).update({ casaId: casaDoc.id });
+    _casaId = casaDoc.id;
+    closeSheet('sheet-entrar-casa');
+    toast(`Bem-vindo à "${casaData.nome}"! 🏠`, 'success');
+    await renderCasa();
+  } catch(e) { toast('Erro ao entrar na Casa', 'error'); console.error(e); }
+}
+
+function copiarCodigoCasa() {
+  const code = _casaCodigo || document.getElementById('casa-codigo-display')?.textContent || '';
+  if (!code || code === '—') return toast('Nenhum código disponível', 'error');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code)
+      .then(() => toast('Código copiado! ✓', 'success'))
+      .catch(() => copiarFallback(code));
+  } else {
+    copiarFallback(code);
+  }
+}
+
+function copiarFallback(text) {
+  const el = document.createElement('textarea');
+  el.value = text; el.style.cssText = 'position:fixed;opacity:0';
+  document.body.appendChild(el);
+  el.focus(); el.select();
+  try { document.execCommand('copy'); toast('Código copiado! ✓', 'success'); }
+  catch(e) { toast('Código: ' + text, 'info'); }
+  document.body.removeChild(el);
+}
+
+async function regenerarCodigoCasa() {
+  if (!_casaId) return;
+  if (!confirm('Gerar novo código? O anterior deixará de funcionar.')) return;
+  const newCode = generateCode();
+  await db.collection('casas').doc(_casaId).update({ codigo: newCode });
+  _casaCodigo = newCode;
+  const el = document.getElementById('casa-codigo-display');
+  if (el) el.textContent = newCode;
+  toast('Novo código gerado ✓', 'success');
+}
+
+async function sairDaCasa() {
+  if (!_casaId || !confirm('Sair desta Casa?')) return;
+  try {
+    const casaDoc = await db.collection('casas').doc(_casaId).get();
+    const membros = (casaDoc.data().membros||[]).filter(m => m.uid !== currentUser.uid);
+    await db.collection('casas').doc(_casaId).update({ membros });
+    await db.collection('users').doc(currentUser.uid).update({ casaId: null });
+    _casaId = null; _casaMembros = [];
+    toast('Você saiu da Casa', 'info');
+    renderCasa();
+  } catch(e) { toast('Erro ao sair', 'error'); }
+}
+
+function abrirCriarCasa() {
+  const el = document.getElementById('casa-nome-input');
+  if (el) el.value = '';
+  openSheet('sheet-criar-casa');
+}
+
+function abrirEntrarCasa() {
+  const el = document.getElementById('casa-codigo-input');
+  if (el) el.value = '';
+  openSheet('sheet-entrar-casa');
+}
+
+// ══ QUEM PAGA — contas da casa ════════════════
+function renderResponsaveisContas() {
+  const el = document.getElementById('conta-responsaveis');
+  if (!el) return;
+  const membros = [{ uid: currentUser.uid, name: currentUser.displayName||'Você' }, ...(_casaMembros||[])];
+  el.innerHTML = `
+    <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;padding:8px 0">
+      <input type="radio" name="conta-paga" value="todos" checked style="accent-color:var(--turquesa)"/> Dividido igual
+    </label>
+    ${membros.map(m=>`
+    <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;padding:8px 0">
+      <input type="radio" name="conta-paga" value="${m.uid}" style="accent-color:var(--turquesa)"/> Só ${m.name}
+    </label>`).join('')}
+    <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;padding:8px 0">
+      <input type="radio" name="conta-paga" value="custom" style="accent-color:var(--turquesa)" onchange="document.getElementById('custom-split-wrap').style.display='flex'"/> Personalizado
+    </label>
+    <div id="custom-split-wrap" style="display:none;flex-direction:column;gap:8px;margin-top:8px">
+      ${membros.map(m=>`
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="flex:1;font-size:13px">${m.name}</span>
+        <input id="split-${m.uid}" type="text" inputmode="numeric" class="form-input" placeholder="0,00" style="width:110px" oninput="formatCurrencyInput(this)"/>
+      </div>`).join('')}
+    </div>`;
+}
+
+function getContaResponsavel() {
+  const radio = document.querySelector('input[name="conta-paga"]:checked');
+  const sel   = radio ? radio.value : 'todos';
+  if (sel === 'custom') {
+    const membros = [{ uid: currentUser.uid }, ...(_casaMembros||[])];
+    const splits  = {};
+    membros.forEach(m => { const v = getFloatValue('split-'+m.uid); if(v>0) splits[m.uid]=v; });
+    return { tipo:'custom', splits };
+  }
+  return sel === 'todos' ? { tipo:'todos' } : { tipo:'individual', uid: sel };
+}
+
+// ══ PLANNER — parte da casa ═══════════════════
+async function calcularParteCasa() {
+  if (!currentUser) return 0;
+  try {
+    const snap = await db.collection('users').doc(currentUser.uid).collection('contas').get();
+    const total = (_casaMembros||[]).length + 1;
+    let minha = 0;
+    snap.docs.forEach(d => {
+      const c   = d.data();
+      const res = c.responsavel || {};
+      if (res.tipo === 'individual' && res.uid === currentUser.uid) minha += c.valor||0;
+      else if (res.tipo === 'custom' && res.splits && res.splits[currentUser.uid]) minha += res.splits[currentUser.uid];
+      else minha += (c.valor||0) / total; // divide igual por padrão
+    });
+    return minha;
+  } catch(e) { return 0; }
+}
+
+
+// ══ FORMATAÇÃO MONETÁRIA ══════════════════════
+function onCurrencyInput(el) {
+  let raw = el.value.replace(/\D/g,'');
+  if (!raw) { el.value=''; el.dataset.float='0'; return; }
+  const num = parseInt(raw,10)/100;
+  el.dataset.float = num;
+  el.value = num.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+}
+
+function getFloatValue(id) {
+  const el = document.getElementById(id);
+  if (!el) return 0;
+  if (el.dataset && el.dataset.float) return parseFloat(el.dataset.float)||0;
+  const raw = (el.value||'').replace(/\./g,'').replace(',','.');
+  return parseFloat(raw)||0;
+}
+
+function formatCurrencyInput(el) { onCurrencyInput(el); }
+
+function setCurrencyValue(id, val) {
+  const el = document.getElementById(id);
+  if (!el || !val) return;
+  const num = parseFloat(val)||0;
+  el.dataset.float = num;
+  el.value = num.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+}
+
 </script>
 </body>
 </html>
