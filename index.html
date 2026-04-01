@@ -1220,13 +1220,49 @@ a { color: inherit; text-decoration: none; }
 
 
 
-      <!-- Membros / Admin -->
-      <div class="members-card" id="members-card-wrap">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <div class="section-title" style="font-size:15px">Membros</div>
-          <span id="admin-badge" style="display:none;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:3px 8px;border-radius:99px;background:rgba(212,168,75,.15);color:var(--dourado2)">Admin</span>
+      <!-- Casa -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-bottom:12px" id="members-card-wrap">
+
+        <!-- Sem casa -->
+        <div id="casa-vazia" style="display:none;text-align:center;padding:16px 0">
+          <div style="font-size:32px;margin-bottom:10px">🏠</div>
+          <div style="font-weight:600;margin-bottom:6px">Você ainda não tem uma Casa</div>
+          <div style="font-size:13px;color:var(--text3);margin-bottom:16px">Crie uma Casa para compartilhar finanças com sua família</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <button class="btn btn-primary btn-full" onclick="abrirCriarCasa()">🏠 Criar uma Casa</button>
+            <button class="btn btn-ghost btn-full" onclick="abrirEntrarCasa()">🔑 Entrar com código</button>
+          </div>
         </div>
-        <div id="members-list"></div>
+
+        <!-- Com casa -->
+        <div id="casa-ativa" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div>
+              <div class="section-title" style="font-size:16px" id="casa-nome-display">—</div>
+              <div style="font-size:12px;color:var(--text3);margin-top:2px">Minha Casa</div>
+            </div>
+            <span style="font-size:24px">🏠</span>
+          </div>
+
+          <!-- Membros da casa -->
+          <div id="members-list" style="margin-bottom:16px"></div>
+
+          <!-- Código de convite -->
+          <div style="background:var(--surface2);border-radius:var(--r-sm);padding:14px;margin-bottom:12px">
+            <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Código de convite</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--turquesa);letter-spacing:4px;flex:1" id="casa-codigo-display">——</div>
+              <button class="btn btn-ghost btn-sm" onclick="copiarCodigoCasa()">Copiar</button>
+              <button class="btn btn-ghost btn-sm" onclick="regenerarCodigoCasa()">↺</button>
+            </div>
+          </div>
+
+          <!-- Sair / outra casa -->
+          <button class="btn btn-ghost btn-full btn-sm" style="color:var(--marsala2)" onclick="sairDaCasa()">Sair desta Casa</button>
+        </div>
+
+      </div>
+      <div id="members-list-placeholder" style="display:none"></div>
 
       </div>
 
@@ -1237,41 +1273,70 @@ a { color: inherit; text-decoration: none; }
         <button class="btn btn-ghost btn-sm btn-full" style="margin-top:12px" onclick="resetDividaSheet();openSheet('sheet-divida')">+ Nova dívida</button>
       </div>
 
-      <!-- Configuração de Salário -->
+      <!-- Receitas & Salário -->
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-bottom:12px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-          <div class="section-title" style="font-size:15px">Meu salário</div>
+        
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div class="section-title" style="font-size:16px">Receitas fixas</div>
           <span style="font-size:20px">💰</span>
         </div>
 
-        <!-- Tipo de recebimento -->
-        <div class="form-group">
-          <label class="form-label">Como recebo</label>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="salary-type-btns">
-            <button class="btn btn-ghost" id="salary-btn-mensal" onclick="setSalaryType('mensal')"
-              style="font-size:13px;padding:10px">📅 Mensal</button>
-            <button class="btn btn-ghost" id="salary-btn-semanal" onclick="setSalaryType('semanal')"
-              style="font-size:13px;padding:10px">📆 Semanal</button>
+        <!-- Salário principal -->
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div style="font-weight:600;font-size:14px">Salário principal</div>
+            <div id="salary-type-display" style="font-size:11px;color:var(--turquesa);font-weight:600;text-transform:uppercase;letter-spacing:.05em">—</div>
+          </div>
+
+          <!-- Toggle tipo -->
+          <div style="display:flex;gap:6px;margin-bottom:14px">
+            <button id="salary-btn-mensal" onclick="setSalaryType('mensal')"
+              style="flex:1;padding:10px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface3);color:var(--text3);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s">
+              📅 Mensal
+            </button>
+            <button id="salary-btn-semanal" onclick="setSalaryType('semanal')"
+              style="flex:1;padding:10px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface3);color:var(--text3);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s">
+              📆 Semanal
+            </button>
+          </div>
+
+          <!-- Valor com R$ na frente -->
+          <div id="salary-mensal-wrap">
+            <div class="form-label" style="margin-bottom:6px">Valor mensal</div>
+            <div style="position:relative">
+              <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;font-weight:500">R$</span>
+              <input class="form-input" id="salary-mensal-val" type="number" step="0.01" placeholder="0,00"
+                style="padding-left:36px;font-family:var(--font-display);font-size:22px;font-weight:600"/>
+            </div>
+          </div>
+
+          <div id="salary-semanal-wrap" style="display:none">
+            <div class="form-label" style="margin-bottom:6px">Valor semanal médio</div>
+            <div style="position:relative">
+              <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;font-weight:500">R$</span>
+              <input class="form-input" id="salary-semanal-val" type="number" step="0.01" placeholder="0,00"
+                style="padding-left:36px;font-family:var(--font-display);font-size:22px;font-weight:600"/>
+            </div>
+          </div>
+
+          <div style="font-size:11px;color:var(--text3);margin-top:8px">🔒 Só você vê esse valor · lançado automaticamente nas receitas</div>
+          <button class="btn btn-primary btn-full" style="margin-top:14px" onclick="salvarSalario()">Atualizar salário</button>
+        </div>
+
+        <!-- Outras receitas fixas -->
+        <div style="margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="font-size:13px;font-weight:600;color:var(--text2)">Outras receitas fixas</div>
+            <button class="btn btn-ghost btn-sm" onclick="abrirNovaReceitaFixa()">+ Adicionar</button>
+          </div>
+          <div id="receitas-fixas-list" style="display:flex;flex-direction:column;gap:8px">
+            <div class="text-muted" id="receitas-fixas-empty">Nenhuma receita extra cadastrada</div>
           </div>
         </div>
 
-        <!-- Valor -->
-        <div class="form-group" id="salary-mensal-wrap" style="display:none">
-          <label class="form-label">Salário mensal (R$)</label>
-          <input class="form-input" id="salary-mensal-val" type="number" step="0.01" placeholder="0,00"/>
-          <div style="font-size:11px;color:var(--text3);margin-top:6px">🔒 Só você vê esse valor</div>
-        </div>
-
-        <div id="salary-semanal-wrap" style="display:none">
-          <div class="form-label" style="margin-bottom:8px">Ganho médio semanal (R$)</div>
-          <input class="form-input" id="salary-semanal-val" type="number" step="0.01" placeholder="0,00"/>
-          <div style="font-size:11px;color:var(--text3);margin-top:6px">🔒 Usado no seu Planner · só você vê</div>
-        </div>
-
-        <button class="btn btn-primary btn-full" style="margin-top:16px" onclick="salvarSalario()">Salvar</button>
       </div>
 
-            <button class="btn btn-ghost btn-full" onclick="doLogout()" style="color:var(--marsala2);border-color:rgba(155,58,74,.3)">
+      <button class="btn btn-ghost btn-full" onclick="doLogout()" style="color:var(--marsala2);border-color:rgba(155,58,74,.3)">
         Sair do minted
       </button>
     </div>
@@ -1329,6 +1394,71 @@ a { color: inherit; text-decoration: none; }
   <div class="form-label" style="margin-bottom:10px">Compartilhar com</div>
   <div id="share-members-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px"></div>
   <button class="btn btn-primary btn-full" onclick="confirmarCompartilhar()">Compartilhar ↗</button>
+</div>
+
+
+<!-- Sheet: Receita Fixa Extra -->
+<div class="sheet-bg" id="sheet-receita-fixa-bg"></div>
+<div class="sheet" id="sheet-receita-fixa">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" id="sheet-receita-fixa-title">Nova Receita Fixa</div>
+  <input type="hidden" id="receita-fixa-edit-id"/>
+  <div class="form-group">
+    <label class="form-label">Descrição</label>
+    <input class="form-input" id="receita-fixa-desc" placeholder="Ex: Freelance, Aluguel recebido..."/>
+  </div>
+  <div style="position:relative;margin-bottom:16px">
+    <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;font-weight:500">R$</span>
+    <input class="form-input" id="receita-fixa-valor" type="number" step="0.01" placeholder="0,00"
+      style="padding-left:36px;font-family:var(--font-display);font-size:22px;font-weight:600"/>
+  </div>
+  <div class="form-group">
+    <label class="form-label">Categoria</label>
+    <select class="form-select" id="receita-fixa-cat">
+      <option>Freelance</option>
+      <option>Aluguel recebido</option>
+      <option>Investimento</option>
+      <option>Pensão</option>
+      <option>Outro</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label class="form-label">Frequência</label>
+    <select class="form-select" id="receita-fixa-freq">
+      <option value="mensal">Mensal</option>
+      <option value="semanal">Semanal</option>
+      <option value="quinzenal">Quinzenal</option>
+    </select>
+  </div>
+  <div style="font-size:11px;color:var(--text3);margin-bottom:16px">🔒 Só você vê · lançado automaticamente nas receitas</div>
+  <button class="btn btn-primary btn-full" onclick="salvarReceitaFixa()">Salvar</button>
+</div>
+
+
+<!-- Sheet: Criar Casa -->
+<div class="sheet-bg" id="sheet-criar-casa-bg"></div>
+<div class="sheet" id="sheet-criar-casa">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">Criar uma Casa 🏠</div>
+  <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Dê um nome pra sua casa e compartilhe o código com quem mora com você.</div>
+  <div class="form-group">
+    <label class="form-label">Nome da Casa</label>
+    <input class="form-input" id="casa-nome-input" placeholder="Ex: Casa Petters, Nosso Lar..."/>
+  </div>
+  <button class="btn btn-primary btn-full" onclick="criarCasa()">Criar Casa</button>
+</div>
+
+<!-- Sheet: Entrar em Casa -->
+<div class="sheet-bg" id="sheet-entrar-casa-bg"></div>
+<div class="sheet" id="sheet-entrar-casa">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">Entrar em uma Casa 🔑</div>
+  <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Digite o código que alguém da sua casa te enviou.</div>
+  <div class="form-group">
+    <label class="form-label">Código da Casa</label>
+    <input class="form-input" id="casa-codigo-input" placeholder="Ex: MNT42K" style="text-transform:uppercase;letter-spacing:4px;font-size:22px;font-family:var(--font-display);font-weight:700;text-align:center"/>
+  </div>
+  <button class="btn btn-primary btn-full" onclick="entrarNaCasa()">Entrar</button>
 </div>
 
 <!-- ═══ TOAST ════════════════════════════════════ -->
@@ -1669,6 +1799,7 @@ function closeSheet(id) {
 
 // Fecha sheet ao clicar no fundo
 document.addEventListener('DOMContentLoaded', () => {
+  initCurrencyInputs();
   document.querySelectorAll('.sheet-bg').forEach(bg => {
     bg.addEventListener('click', e => {
       if (e.target === bg) {
@@ -2176,7 +2307,7 @@ async function saveConta() {
   const id = document.getElementById('conta-edit-id').value;
   const dataObj = {
     nome:       document.getElementById('conta-nome').value.trim(),
-    valor:      parseFloat(document.getElementById('conta-valor').value) || 0,
+    valor:      getFloatValue('conta-valor'),
     categoria:  document.getElementById('conta-categoria').value,
     dia:        parseInt(document.getElementById('conta-dia').value) || null,
     status:     document.getElementById('conta-status').value,
@@ -2279,7 +2410,7 @@ async function saveGasto() {
   const dataStr = document.getElementById('gasto-data').value || today();
   const dataObj = {
     desc:       document.getElementById('gasto-desc').value.trim(),
-    valor:      parseFloat(document.getElementById('gasto-valor').value) || 0,
+    valor:      getFloatValue('gasto-valor'),
     categoria:  document.getElementById('gasto-categoria').value,
     data:       dataStr,
     resp:       document.getElementById('gasto-resp').value.trim(),
@@ -2387,7 +2518,7 @@ async function saveReceita() {
   const dataStr = document.getElementById('receita-data').value || today();
   const dataObj = {
     desc:      document.getElementById('receita-desc').value.trim(),
-    valor:     parseFloat(document.getElementById('receita-valor').value) || 0,
+    valor:     getFloatValue('receita-valor'),
     categoria: document.getElementById('receita-categoria').value,
     data:      dataStr,
     resp:      document.getElementById('receita-resp').value.trim(),
@@ -2477,8 +2608,8 @@ async function saveDivida() {
   const id = document.getElementById('divida-edit-id').value;
   const dataObj = {
     desc:      document.getElementById('divida-desc').value.trim(),
-    total:     parseFloat(document.getElementById('divida-total').value) || 0,
-    parcela:   parseFloat(document.getElementById('divida-parcela').value) || 0,
+    total:     getFloatValue('divida-total'),
+    parcela:   getFloatValue('divida-parcela'),
     pagas:     parseInt(document.getElementById('divida-pagas').value) || 0,
     totalParc: parseInt(document.getElementById('divida-total-parc').value) || 1,
     dia:       parseInt(document.getElementById('divida-dia').value) || null,
@@ -2778,7 +2909,7 @@ async function saveMeta() {
 
   const dataObj = {
     nome:          document.getElementById('meta-nome').value.trim(),
-    alvo:          parseFloat(document.getElementById('meta-alvo').value) || 0,
+    alvo:          getFloatValue('meta-alvo'),
     prazo:         document.getElementById('meta-prazo').value || null,
     emoji:         document.getElementById('meta-emoji').value || '🎯',
     contribuicoes: id ? undefined : contribuicoes, // ao editar, mantém existentes
@@ -2848,7 +2979,7 @@ function renderContribInputs(existing) {
 
 // ── VAQUINHA AUTOMÁTICA ───────────────────────
 function autoSplitMeta() {
-  const alvo   = parseFloat(document.getElementById('meta-alvo').value) || 0;
+  const alvo   = getFloatValue('meta-alvo');
   const membros = window._groupMembers || [];
   if (!alvo || !membros.length) return;
 
@@ -2873,7 +3004,7 @@ function openContribuirSheet(metaId, nome, alvo) {
 
 async function saveContribuicao() {
   const metaId = document.getElementById('contrib-meta-id').value;
-  const valor  = parseFloat(document.getElementById('contrib-valor').value) || 0;
+  const valor  = getFloatValue('contrib-valor');
   const quem   = document.getElementById('contrib-quem').value.trim();
   if (!valor) return toast('Informe o valor', 'error');
 
@@ -3043,6 +3174,7 @@ async function showApp() {
 
   await loadAll();
   carregarNotificacoes();
+  renderCasa();
 }
 
 // ── USER INIT ─────────────────────────────────
@@ -3161,7 +3293,7 @@ function switchPanel(panel) {
   _currentPanel = panel;
 
   if (panel === 'calendario') renderCalendarPanel();
-  if (panel === 'perfil') { renderPerfil(); loadSalarioConfig(); }
+  if (panel === 'perfil') { renderPerfil(); loadSalarioConfig(); renderCasa(); }
     if (panel === 'planner') { renderPlanner2(); setPlannerView(window._plannerView || 'semanal'); }
 }
 
@@ -3389,7 +3521,7 @@ function getPlannerMonthKey() {
 }
 
 async function salvarGanhoSemana() {
-  const val = parseFloat(document.getElementById('planner-ganho-input').value) || 0;
+  const val = getFloatValue('planner-ganho-input');
   if (!val) return toast('Informe o valor ganho', 'error');
 
   const wk = getWeekNumber();
@@ -3600,7 +3732,7 @@ async function doGoogleLogin() {
 
 // ── PLANEJADOR PAINEL DEDICADO ────────────────
 async function salvarGanhoSemana2() {
-  const val = parseFloat(document.getElementById('planner-ganho-input2').value) || 0;
+  const val = getFloatValue('planner-ganho-input2');
   if (!val) return toast('Informe o valor ganho', 'error');
   const wk = getWeekNumber();
   const mk = monthKey(currentYear, currentMonth);
@@ -3612,6 +3744,15 @@ async function salvarGanhoSemana2() {
 
 async function renderPlanner2() {
   if (!currentUser) return;
+
+  // Busca tipo de salário do usuário
+  const userDoc  = await db.collection('users').doc(currentUser.uid).get();
+  const salTipo  = (userDoc.data() || {}).salarioTipo || 'mensal';
+  window._salarioTipo = salTipo;
+
+  // Define visão automaticamente baseada no salário
+  const autoView = salTipo === 'semanal' ? 'semanal' : 'mensal';
+  await setPlannerView(autoView);
   const mk = monthKey(currentYear, currentMonth);
   const wkAtual = getWeekNumber();
 
@@ -3768,94 +3909,11 @@ async function criarGrupo() {
 
 
 // ── SALÁRIO / TIPO DE RECEBIMENTO ────────────
-async function loadSalarioConfig() {
-  if (!currentUser) return;
-  const doc = await db.collection('users').doc(currentUser.uid).get();
-  const data = doc.data() || {};
-  const tipo = data.salarioTipo || 'mensal';
-  const val  = data.salarioVal  || 0;
 
-  setSalaryType(tipo, false);
 
-  if (tipo === 'mensal') {
-    const el = document.getElementById('salary-mensal-val');
-    if (el && val) el.value = val;
-  } else {
-    const el = document.getElementById('salary-semanal-val');
-    if (el && val) el.value = val;
-  }
-}
 
-function setSalaryType(tipo, save = true) {
-  const btnM = document.getElementById('salary-btn-mensal');
-  const btnS = document.getElementById('salary-btn-semanal');
-  const wrapM = document.getElementById('salary-mensal-wrap');
-  const wrapS = document.getElementById('salary-semanal-wrap');
 
-  if (btnM) btnM.style.borderColor = tipo === 'mensal' ? 'var(--turquesa)' : '';
-  if (btnM) btnM.style.color = tipo === 'mensal' ? 'var(--turquesa)' : '';
-  if (btnS) btnS.style.borderColor = tipo === 'semanal' ? 'var(--turquesa)' : '';
-  if (btnS) btnS.style.color = tipo === 'semanal' ? 'var(--turquesa)' : '';
-  if (wrapM) wrapM.style.display = tipo === 'mensal' ? 'block' : 'none';
-  if (wrapS) wrapS.style.display = tipo === 'semanal' ? 'block' : 'none';
 
-  window._salarioTipo = tipo;
-}
-
-async function salvarSalario() {
-  const tipo = window._salarioTipo || 'mensal';
-  const inputId = tipo === 'mensal' ? 'salary-mensal-val' : 'salary-semanal-val';
-  const val = parseFloat(document.getElementById(inputId)?.value) || 0;
-  if (!val) return toast('Informe o valor', 'error');
-
-  // Salva configuração do usuário
-  await db.collection('users').doc(currentUser.uid).update({
-    salarioTipo: tipo,
-    salarioVal:  val,
-  });
-
-  const mk = monthKey(currentYear, currentMonth);
-  const dataHoje = today();
-
-  if (tipo === 'mensal') {
-    // Cria receita mensal automaticamente
-    await col('receitas').add({
-      desc:      'Salário',
-      valor:     val,
-      categoria: 'Salário',
-      data:      dataHoje,
-      resp:      currentUser.displayName || 'Eu',
-      monthKey:  mk,
-      authorUid: currentUser.uid,
-      auto:      true,
-      createdAt: new Date().toISOString(),
-    });
-    toast('Salário mensal salvo e adicionado às receitas ✓', 'success');
-    loadAll();
-
-  } else {
-    // Semanal: cria receita da semana + alimenta planner
-    const wk = getWeekNumber();
-    await col('receitas').add({
-      desc:      `Salário semana ${wk}`,
-      valor:     val,
-      categoria: 'Salário',
-      data:      dataHoje,
-      resp:      currentUser.displayName || 'Eu',
-      monthKey:  mk,
-      authorUid: currentUser.uid,
-      auto:      true,
-      createdAt: new Date().toISOString(),
-    });
-    await db.collection('users').doc(currentUser.uid).collection('planner')
-      .doc(`${mk}_w${wk}`).set({
-        ganho: val, semana: wk, monthKey: mk,
-        uid: currentUser.uid, updatedAt: new Date().toISOString()
-      }, { merge: true });
-    toast('Salário semanal salvo nas receitas e no Planner ✓', 'success');
-    loadAll();
-  }
-}
 
 
 // ── COMPARTILHAR LANÇAMENTO ───────────────────
@@ -3870,8 +3928,8 @@ function compartilharLancamento(tipo, id, desc, valor) {
   document.getElementById('share-preview-desc').textContent  = desc;
   document.getElementById('share-preview-valor').textContent = fmtBRL(valor);
 
-  // Lista membros do grupo exceto o próprio usuário
-  const membros = (window._groupMembers || []).filter(m => m.uid !== currentUser.uid);
+  // Lista membros da Casa exceto o próprio usuário
+  const membros = (window._casaMembros || []);
   const el = document.getElementById('share-members-list');
   if (!membros.length) {
     el.innerHTML = '<div class="text-muted">Nenhum outro membro no grupo ainda</div>';
@@ -3911,7 +3969,7 @@ async function confirmarCompartilhar() {
   const tipo  = document.getElementById('share-tipo').value;
   const id    = document.getElementById('share-id').value;
   const desc  = document.getElementById('share-desc').value;
-  const valor = parseFloat(document.getElementById('share-valor').value) || 0;
+  const valor = getFloatValue('share-valor');
 
   // Busca o lançamento original
   const collName = tipo === 'gasto' ? 'gastos' : tipo === 'receita' ? 'receitas' : 'contas';
@@ -3942,7 +4000,7 @@ async function confirmarCompartilhar() {
         de:   currentUser.displayName || 'Alguém',
         deUid: currentUser.uid,
         desc:  document.getElementById('share-desc').value,
-        valor: parseFloat(document.getElementById('share-valor').value) || 0,
+        valor: getFloatValue('share-valor'),
         lida:  false,
         createdAt: new Date().toISOString(),
       });
@@ -4109,6 +4167,413 @@ document.addEventListener('click', e => {
     dd.style.display = 'none';
   }
 });
+
+
+// ── SALÁRIO & RECEITAS FIXAS ─────────────────
+
+function setSalaryType(tipo, save = true) {
+  const btnM  = document.getElementById('salary-btn-mensal');
+  const btnS  = document.getElementById('salary-btn-semanal');
+  const wrapM = document.getElementById('salary-mensal-wrap');
+  const wrapS = document.getElementById('salary-semanal-wrap');
+  const disp  = document.getElementById('salary-type-display');
+
+  const activeStyle  = 'border-color:var(--turquesa);background:var(--turquesa3);color:var(--turquesa)';
+  const defaultStyle = 'border:1px solid var(--border);background:var(--surface3);color:var(--text3)';
+
+  if (btnM) btnM.style.cssText += tipo === 'mensal' ? `;${activeStyle}` : `;${defaultStyle}`;
+  if (btnS) btnS.style.cssText += tipo === 'semanal' ? `;${activeStyle}` : `;${defaultStyle}`;
+  if (wrapM) wrapM.style.display = tipo === 'mensal' ? 'block' : 'none';
+  if (wrapS) wrapS.style.display = tipo === 'semanal' ? 'block' : 'none';
+  if (disp)  disp.textContent = tipo === 'mensal' ? 'Mensal' : 'Semanal';
+
+  window._salarioTipo = tipo;
+}
+
+async function loadSalarioConfig() {
+  if (!currentUser) return;
+  try {
+    const doc = await db.collection('users').doc(currentUser.uid).get();
+    const data = doc.data() || {};
+    const tipo = data.salarioTipo || 'mensal';
+    const val  = data.salarioVal  || '';
+
+    setSalaryType(tipo, false);
+
+    const inputM = document.getElementById('salary-mensal-val');
+    const inputS = document.getElementById('salary-semanal-val');
+    if (tipo === 'mensal' && inputM && val) inputM.value = val;
+    if (tipo === 'semanal' && inputS && val) inputS.value = val;
+
+    // Carrega receitas fixas extras
+    await carregarReceitasFixas();
+  } catch(e) { console.log('loadSalario erro:', e); }
+}
+
+async function salvarSalario() {
+  const tipo = window._salarioTipo || 'mensal';
+  const inputId = tipo === 'mensal' ? 'salary-mensal-val' : 'salary-semanal-val';
+  const val = parseFloat(document.getElementById(inputId)?.value) || 0;
+  if (!val) return toast('Informe o valor', 'error');
+
+  // Salva config
+  await db.collection('users').doc(currentUser.uid).update({
+    salarioTipo: tipo, salarioVal: val,
+  });
+
+  const mk      = monthKey(currentYear, currentMonth);
+  const dataHoje = today();
+
+  // Remove receita de salário existente deste mês para não duplicar
+  const existing = await col('receitas')
+    .where('monthKey', '==', mk)
+    .where('tipo', '==', 'salario_auto')
+    .where('authorUid', '==', currentUser.uid)
+    .get();
+  for (const d of existing.docs) await col('receitas').doc(d.id).delete();
+
+  // Cria nova receita
+  if (tipo === 'mensal') {
+    await col('receitas').add({
+      desc: `Salário — ${currentUser.displayName || 'Eu'}`,
+      valor: val, categoria: 'Salário',
+      data: dataHoje, resp: currentUser.displayName || 'Eu',
+      monthKey: mk, tipo: 'salario_auto',
+      authorUid: currentUser.uid, visibility: 'private',
+      createdAt: new Date().toISOString(),
+    });
+    toast('Salário atualizado nas receitas ✓', 'success');
+  } else {
+    const wk = getWeekNumber();
+    await col('receitas').add({
+      desc: `Salário semana ${wk} — ${currentUser.displayName || 'Eu'}`,
+      valor: val, categoria: 'Salário',
+      data: dataHoje, resp: currentUser.displayName || 'Eu',
+      monthKey: mk, tipo: 'salario_auto',
+      authorUid: currentUser.uid, visibility: 'private',
+      createdAt: new Date().toISOString(),
+    });
+    await db.collection('users').doc(currentUser.uid).collection('planner')
+      .doc(`${mk}_w${wk}`).set({
+        ganho: val, semana: wk, monthKey: mk,
+        uid: currentUser.uid, updatedAt: new Date().toISOString()
+      }, { merge: true });
+    toast('Salário semanal atualizado ✓', 'success');
+  }
+  loadAll();
+}
+
+// ── RECEITAS FIXAS EXTRAS ─────────────────────
+
+async function carregarReceitasFixas() {
+  const snap = await db.collection('users').doc(currentUser.uid)
+    .collection('receitasFixas').get();
+  const items = snap.docs.map(d => ({id: d.id, ...d.data()}));
+
+  const el    = document.getElementById('receitas-fixas-list');
+  const empty = document.getElementById('receitas-fixas-empty');
+  if (!el) return;
+
+  if (!items.length) {
+    if (empty) empty.style.display = 'block';
+    el.innerHTML = '<div class="text-muted" id="receitas-fixas-empty">Nenhuma receita extra cadastrada</div>';
+    return;
+  }
+
+  if (empty) empty.style.display = 'none';
+  el.innerHTML = items.map(r => `
+    <div style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px">
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:500">${r.desc}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${r.categoria} · ${r.freq || 'Mensal'}</div>
+      </div>
+      <div style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--income)">${fmtBRL(r.valor)}</div>
+      <button class="btn-icon" onclick="editarReceitaFixa('${r.id}')">✎</button>
+      <button class="btn-icon" onclick="excluirReceitaFixa('${r.id}')">✕</button>
+    </div>`).join('');
+}
+
+function abrirNovaReceitaFixa() {
+  document.getElementById('sheet-receita-fixa-title').textContent = 'Nova Receita Fixa';
+  document.getElementById('receita-fixa-edit-id').value = '';
+  document.getElementById('receita-fixa-desc').value    = '';
+  document.getElementById('receita-fixa-valor').value   = '';
+  document.getElementById('receita-fixa-cat').value     = 'Freelance';
+  document.getElementById('receita-fixa-freq').value    = 'mensal';
+  openSheet('sheet-receita-fixa');
+}
+
+async function editarReceitaFixa(id) {
+  const doc = await db.collection('users').doc(currentUser.uid)
+    .collection('receitasFixas').doc(id).get();
+  const d = doc.data();
+  document.getElementById('sheet-receita-fixa-title').textContent = 'Editar Receita';
+  document.getElementById('receita-fixa-edit-id').value = id;
+  document.getElementById('receita-fixa-desc').value    = d.desc || '';
+  document.getElementById('receita-fixa-valor').value   = d.valor || '';
+  document.getElementById('receita-fixa-cat').value     = d.categoria || 'Freelance';
+  document.getElementById('receita-fixa-freq').value    = d.freq || 'mensal';
+  openSheet('sheet-receita-fixa');
+}
+
+async function salvarReceitaFixa() {
+  const id   = document.getElementById('receita-fixa-edit-id').value;
+  const desc = document.getElementById('receita-fixa-desc').value.trim();
+  const val  = getFloatValue('receita-fixa-valor');
+  const cat  = document.getElementById('receita-fixa-cat').value;
+  const freq = document.getElementById('receita-fixa-freq').value;
+
+  if (!desc || !val) return toast('Preencha descrição e valor', 'error');
+
+  const ref = db.collection('users').doc(currentUser.uid).collection('receitasFixas');
+  const mk  = monthKey(currentYear, currentMonth);
+
+  if (id) {
+    await ref.doc(id).update({ desc, valor: val, categoria: cat, freq, updatedAt: new Date().toISOString() });
+    // Atualiza receita do mês
+    const existing = await col('receitas').where('receitaFixaId','==',id).where('monthKey','==',mk).get();
+    for (const d of existing.docs) await col('receitas').doc(d.id).update({ desc, valor: val });
+  } else {
+    const newRef = await ref.add({
+      desc, valor: val, categoria: cat, freq,
+      authorUid: currentUser.uid,
+      createdAt: new Date().toISOString(),
+    });
+    // Lança no mês atual
+    await col('receitas').add({
+      desc, valor: val, categoria: cat,
+      data: today(), resp: currentUser.displayName || 'Eu',
+      monthKey: mk, tipo: 'receita_fixa_auto',
+      receitaFixaId: newRef.id,
+      authorUid: currentUser.uid, visibility: 'private',
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  closeSheet('sheet-receita-fixa');
+  toast(id ? 'Receita atualizada ✓' : 'Receita adicionada ✓', 'success');
+  carregarReceitasFixas();
+  loadAll();
+}
+
+async function excluirReceitaFixa(id) {
+  if (!confirm('Excluir esta receita fixa?')) return;
+  await db.collection('users').doc(currentUser.uid).collection('receitasFixas').doc(id).delete();
+  // Remove receitas lançadas automaticamente
+  const mk = monthKey(currentYear, currentMonth);
+  const auto = await col('receitas').where('receitaFixaId','==',id).get();
+  for (const d of auto.docs) await col('receitas').doc(d.id).delete();
+  toast('Excluído ✓', 'success');
+  carregarReceitasFixas();
+  loadAll();
+}
+
+
+// ════════════════════════════════════════════
+//  CASA — estrutura compartilhada
+// ════════════════════════════════════════════
+
+function abrirCriarCasa() { openSheet('sheet-criar-casa'); }
+function abrirEntrarCasa() { openSheet('sheet-entrar-casa'); }
+
+async function criarCasa() {
+  const nome = document.getElementById('casa-nome-input').value.trim();
+  if (!nome) return toast('Digite o nome da Casa', 'error');
+
+  const codigo = generateCode();
+  const casaRef = await db.collection('casas').add({
+    nome,
+    codigo,
+    donoUid: currentUser.uid,
+    membros: [{
+      uid:   currentUser.uid,
+      name:  currentUser.displayName || currentUser.email,
+      email: currentUser.email,
+      photo: currentUser.photoURL || null,
+    }],
+    createdAt: new Date().toISOString(),
+  });
+
+  await db.collection('users').doc(currentUser.uid).update({
+    casaId: casaRef.id,
+  });
+
+  window._casaId = casaRef.id;
+  closeSheet('sheet-criar-casa');
+  toast(`Casa "${nome}" criada! Compartilhe o código com sua família 🏠`, 'success');
+  await renderCasa();
+}
+
+async function entrarNaCasa() {
+  const codigo = document.getElementById('casa-codigo-input').value.trim().toUpperCase();
+  if (!codigo) return toast('Digite o código', 'error');
+
+  const snap = await db.collection('casas').where('codigo', '==', codigo).limit(1).get();
+  if (snap.empty) return toast('Código não encontrado', 'error');
+
+  const casaDoc  = snap.docs[0];
+  const casaData = casaDoc.data();
+
+  // Verifica se já é membro
+  const jaEMembro = (casaData.membros || []).some(m => m.uid === currentUser.uid);
+  if (jaEMembro) {
+    toast('Você já está nesta Casa!', 'info');
+    closeSheet('sheet-entrar-casa');
+    return;
+  }
+
+  // Adiciona como membro
+  const novoMembro = {
+    uid:   currentUser.uid,
+    name:  currentUser.displayName || currentUser.email,
+    email: currentUser.email,
+    photo: currentUser.photoURL || null,
+  };
+
+  await casaDoc.ref.update({
+    membros: firebase.firestore.FieldValue.arrayUnion(novoMembro),
+  });
+
+  await db.collection('users').doc(currentUser.uid).update({
+    casaId: casaDoc.id,
+  });
+
+  window._casaId = casaDoc.id;
+  closeSheet('sheet-entrar-casa');
+  toast(`Bem-vindo à "${casaData.nome}"! 🏠`, 'success');
+  await renderCasa();
+}
+
+async function renderCasa() {
+  if (!currentUser) return;
+
+  // Busca casaId do usuário
+  const userDoc = await db.collection('users').doc(currentUser.uid).get();
+  const casaId  = (userDoc.data() || {}).casaId;
+  window._casaId = casaId || null;
+
+  const casaVazia = document.getElementById('casa-vazia');
+  const casaAtiva = document.getElementById('casa-ativa');
+
+  if (!casaId) {
+    if (casaVazia) casaVazia.style.display = 'block';
+    if (casaAtiva) casaAtiva.style.display = 'none';
+    window._casaMembros = [];
+    return;
+  }
+
+  const casaDoc = await db.collection('casas').doc(casaId).get();
+  if (!casaDoc.exists) {
+    if (casaVazia) casaVazia.style.display = 'block';
+    if (casaAtiva) casaAtiva.style.display = 'none';
+    return;
+  }
+
+  const casa = casaDoc.data();
+  window._casaMembros = (casa.membros || []).filter(m => m.uid !== currentUser.uid);
+  window._casaCodigo  = casa.codigo;
+
+  if (casaVazia) casaVazia.style.display = 'none';
+  if (casaAtiva) casaAtiva.style.display = 'block';
+
+  const nomeEl   = document.getElementById('casa-nome-display');
+  const codigoEl = document.getElementById('casa-codigo-display');
+  if (nomeEl)   nomeEl.textContent   = casa.nome;
+  if (codigoEl) codigoEl.textContent = casa.codigo;
+
+  // Renderiza membros
+  const membrosEl = document.getElementById('members-list');
+  if (membrosEl) {
+    const todos = casa.membros || [];
+    membrosEl.innerHTML = todos.map(m => {
+      const isMe = m.uid === currentUser.uid;
+      const initial = (m.name || '?').charAt(0).toUpperCase();
+      return `
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          ${m.photo
+            ? `<img src="${m.photo}" style="width:40px;height:40px;border-radius:12px;object-fit:cover"/>`
+            : `<div style="width:40px;height:40px;border-radius:12px;background:var(--turquesa3);color:var(--turquesa);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px">${initial}</div>`
+          }
+          <div style="flex:1">
+            <div style="font-weight:500;font-size:14px">${m.name || m.email}</div>
+            <div style="font-size:11px;color:var(--text3)">${m.email || ''}</div>
+          </div>
+          ${isMe ? '<span style="font-size:11px;color:var(--text3)">Você</span>' : ''}
+        </div>`;
+    }).join('') || '<div class="text-muted">Só você por enquanto</div>';
+  }
+}
+
+function copiarCodigoCasa() {
+  const code = window._casaCodigo || '';
+  navigator.clipboard.writeText(code).then(() => toast('Código copiado! ✓', 'success'));
+}
+
+async function regenerarCodigoCasa() {
+  if (!window._casaId) return;
+  if (!confirm('Gerar novo código? O anterior deixará de funcionar.')) return;
+  const newCode = generateCode();
+  await db.collection('casas').doc(window._casaId).update({ codigo: newCode });
+  window._casaCodigo = newCode;
+  const el = document.getElementById('casa-codigo-display');
+  if (el) el.textContent = newCode;
+  toast('Novo código gerado ✓', 'success');
+}
+
+async function sairDaCasa() {
+  if (!window._casaId) return;
+  if (!confirm('Sair desta Casa? Você precisará de um novo código para entrar novamente.')) return;
+
+  const casaDoc = await db.collection('casas').doc(window._casaId).get();
+  const membros = (casaDoc.data().membros || []).filter(m => m.uid !== currentUser.uid);
+  await db.collection('casas').doc(window._casaId).update({ membros });
+  await db.collection('users').doc(currentUser.uid).update({ casaId: null });
+
+  window._casaId = null;
+  window._casaMembros = [];
+  toast('Você saiu da Casa', 'info');
+  renderCasa();
+}
+
+
+// ── FORMATAÇÃO NUMÉRICA AUTOMÁTICA ───────────
+function formatCurrencyInput(input) {
+  // Remove tudo que não é número
+  let val = input.value.replace(/\D/g, '');
+  if (!val) { input.value = ''; return; }
+  // Converte para centavos e formata
+  let num = parseInt(val, 10) / 100;
+  input.value = num.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  // Guarda valor float no dataset
+  input.dataset.floatValue = num;
+}
+
+function getFloatValue(inputId) {
+  const el = document.getElementById(inputId);
+  if (!el) return 0;
+  // Tenta dataset primeiro, depois parse manual
+  if (el.dataset.floatValue) return parseFloat(el.dataset.floatValue) || 0;
+  const raw = el.value.replace(/\./g, '').replace(',', '.');
+  return parseFloat(raw) || 0;
+}
+
+function initCurrencyInputs() {
+  const ids = [
+    'conta-valor','gasto-valor','receita-valor',
+    'divida-total','divida-parcela','contrib-valor',
+    'salary-mensal-val','salary-semanal-val','receita-fixa-valor',
+    'meta-alvo','planner-ganho-input2'
+  ];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    // Muda type para text para controlar o formato
+    el.setAttribute('type', 'text');
+    el.setAttribute('inputmode', 'numeric');
+    el.setAttribute('placeholder', '0,00');
+    el.addEventListener('input', () => formatCurrencyInput(el));
+  });
+}
 
 </script>
 
