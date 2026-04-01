@@ -235,10 +235,10 @@ input, select, textarea { font-family: var(--font-body); outline: none; }
 .hero-value.positive { color: var(--turquesa); }
 .hero-value.negative { color: var(--expense); }
 .hero-value.zero     { color: var(--text2); }
-.hero-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
-.hero-stat { background: var(--surface2); border-radius: var(--r-sm); padding: 12px; }
+.hero-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 14px; margin-bottom: 16px; }
+.hero-stat { background: var(--surface2); border-radius: var(--r-sm); padding: 10px 8px; }
 .hero-stat-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
-.hero-stat-value { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
+.hero-stat-value { font-family: var(--font-display); font-size: 14px; font-weight: 600; }
 .hero-stat-value.inc { color: var(--income); }
 .hero-stat-value.exp { color: var(--expense); }
 .hero-stat-toggle { cursor: pointer; transition: background .15s; }
@@ -463,6 +463,24 @@ input, select, textarea { font-family: var(--font-body); outline: none; }
   .form-row { grid-template-columns: 1fr; }
   .main { padding-left: 14px; padding-right: 14px; }
 }
+/* Day picker */
+.day-picker-btn { text-align:left; cursor:pointer; color:var(--text2); }
+.day-picker-btn.has-val { color:var(--text); font-weight:600; }
+.day-picker-popup {
+  position:fixed; z-index:9999; background:var(--surface2); border:1px solid var(--border);
+  border-radius:var(--r); padding:14px; box-shadow:0 8px 32px rgba(0,0,0,.5);
+  width:232px;
+}
+.day-picker-popup .dp-grid {
+  display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-top:8px;
+}
+.day-picker-popup .dp-day {
+  width:28px; height:28px; border-radius:7px; border:none; background:var(--surface);
+  color:var(--text2); font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+}
+.day-picker-popup .dp-day:hover { background:var(--turquesa3); color:var(--turquesa); }
+.day-picker-popup .dp-day.selected { background:var(--turquesa); color:#fff; font-weight:700; }
+.day-picker-popup .dp-title { font-size:12px; color:var(--text3); font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
 </style>
 </head>
 <body>
@@ -574,6 +592,13 @@ input, select, textarea { font-family: var(--font-body); outline: none; }
             </div>
             <div class="hero-stat-value exp" id="hero-despesa">—</div>
           </div>
+          <div class="hero-stat hero-stat-toggle" onclick="toggleHeroAccordion('pago')" id="hero-stat-pago">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div class="hero-stat-label">Pago</div>
+              <span class="hero-arrow" id="hero-arrow-pago">▾</span>
+            </div>
+            <div class="hero-stat-value" style="color:var(--dourado)" id="hero-pago">—</div>
+          </div>
         </div>
         <!-- Accordion Entrada -->
         <div class="hero-accordion" id="hero-accordion-entrada" style="display:none">
@@ -582,6 +607,10 @@ input, select, textarea { font-family: var(--font-body); outline: none; }
         <!-- Accordion Saída -->
         <div class="hero-accordion" id="hero-accordion-saida" style="display:none">
           <div id="hero-acc-lista-saida"><div class="text-muted" style="padding:8px 0;font-size:13px">Carregando...</div></div>
+        </div>
+        <!-- Accordion Pago -->
+        <div class="hero-accordion" id="hero-accordion-pago" style="display:none">
+          <div id="hero-acc-lista-pago"><div class="text-muted" style="padding:8px 0;font-size:13px">Carregando...</div></div>
         </div>
         <div class="budget-head">
           <span id="budget-label">Orçamento</span>
@@ -612,6 +641,15 @@ input, select, textarea { font-family: var(--font-body); outline: none; }
       </div>
       <div class="item-list" id="upcoming-list">
         <div class="empty"><div class="text-muted">Nenhuma conta próxima</div></div>
+      </div>
+
+      <!-- HISTÓRICO MENSAL -->
+      <div class="card" style="margin-top:18px">
+        <div class="section-head" style="margin-bottom:14px">
+          <div class="section-title" style="font-size:15px">Histórico Mensal</div>
+          <span class="text-muted">6 meses</span>
+        </div>
+        <div id="historico-list"><div class="text-muted">Carregando...</div></div>
       </div>
     </div>
 
@@ -908,7 +946,7 @@ input, select, textarea { font-family: var(--font-body); outline: none; }
     <div class="form-group">
       <label class="form-label">Categoria</label>
       <select class="form-select" id="gasto-cat">
-        <option>Alimentação</option><option>Transporte</option><option>Lazer</option>
+        <option>Alimentação</option><option>Transporte</option><option>Veículo/Moto</option><option>Lazer</option>
         <option>Saúde</option><option>Vestuário</option><option>Pet</option>
         <option>Educação</option><option>Beleza</option><option>Outro</option>
       </select>
@@ -991,12 +1029,14 @@ input, select, textarea { font-family: var(--font-body); outline: none; }
       <select class="form-select" id="conta-cat">
         <option>Moradia</option><option>Energia</option><option>Água</option>
         <option>Internet</option><option>Telefone</option><option>Streaming</option>
-        <option>Saúde</option><option>Escola</option><option>Seguro</option><option>Outro</option>
+        <option>Saúde</option><option>Escola</option><option>Seguro</option>
+        <option>Alimentação</option><option>Veículo/Moto</option><option>Outro</option>
       </select>
     </div>
     <div class="form-group">
       <label class="form-label">Dia vencimento</label>
-      <input class="form-input" id="conta-dia" type="number" min="1" max="31" placeholder="10"/>
+      <input type="hidden" id="conta-dia"/>
+      <button type="button" class="form-input day-picker-btn" id="conta-dia-btn" onclick="openDayPicker('conta-dia','conta-dia-btn')">Selecionar dia</button>
     </div>
   </div>
   <div class="form-group">
@@ -1039,7 +1079,7 @@ input, select, textarea { font-family: var(--font-body); outline: none; }
     <div class="form-group"><label class="form-label">Total parcelas</label><input class="form-input" id="divida-total-parc" type="number" min="1" value="12"/></div>
   </div>
   <div class="form-row">
-    <div class="form-group"><label class="form-label">Dia vencimento</label><input class="form-input" id="divida-dia" type="number" min="1" max="31" placeholder="10"/></div>
+    <div class="form-group"><label class="form-label">Dia vencimento</label><input type="hidden" id="divida-dia"/><button type="button" class="form-input day-picker-btn" id="divida-dia-btn" onclick="openDayPicker('divida-dia','divida-dia-btn')">Selecionar dia</button></div>
     <div class="form-group"><label class="form-label">Responsável</label><input class="form-input" id="divida-resp" placeholder="Quem deve?"/></div>
   </div>
   <button class="btn btn-primary btn-full" onclick="saveDivida()">Salvar</button>
@@ -1169,8 +1209,9 @@ const CAT_STYLE = {
   'Saúde':      { icon:'🏥', bg:'rgba(0,201,177,.15)'  },
   'Escola':     { icon:'📚', bg:'rgba(212,168,75,.15)' },
   'Seguro':     { icon:'🛡️', bg:'rgba(92,90,88,.2)'   },
-  'Alimentação':{ icon:'🛒', bg:'rgba(212,168,75,.15)' },
+  'Alimentação':{ icon:'🍽️', bg:'rgba(212,168,75,.15)' },
   'Transporte': { icon:'🚗', bg:'rgba(0,180,204,.15)'  },
+  'Veículo/Moto':{ icon:'🏍️', bg:'rgba(0,150,180,.15)' },
   'Lazer':      { icon:'🎮', bg:'rgba(155,58,74,.15)'  },
   'Vestuário':  { icon:'👕', bg:'rgba(155,58,74,.12)'  },
   'Pet':        { icon:'🐾', bg:'rgba(212,168,75,.12)' },
@@ -1363,6 +1404,24 @@ async function initUserData() {
       salarioVal: 0,
       createdAt: new Date().toISOString(),
     });
+  } else {
+    // Garante que a entrada de salário existe para o mês atual
+    const data = userDoc.data() || {};
+    if (data.salarioVal && data.salarioTipo === 'mensal') {
+      const cmk = curMk();
+      const existing = await col('receitas')
+        .where('monthKey','==',cmk).where('tipo','==','salario_auto').get();
+      if (existing.empty) {
+        const nome = currentUser.displayName || 'Eu';
+        await col('receitas').add({
+          desc: `Salário — ${nome}`, valor: data.salarioVal,
+          categoria: 'Salário', data: today(), resp: nome,
+          monthKey: cmk, tipo: 'salario_auto',
+          authorUid: currentUser.uid, visibility: 'private',
+          createdAt: new Date().toISOString(),
+        });
+      }
+    }
   }
 }
 
@@ -1414,8 +1473,23 @@ async function loadAll() {
   ]);
   const contas   = cSnap.docs.map(d=>({id:d.id,...d.data()}));
   const gastos   = gSnap.docs.map(d=>({id:d.id,...d.data()})).filter(g => g.visibility!=='private' || g.authorUid===currentUser.uid);
-  const receitas = rSnap.docs.map(d=>({id:d.id,...d.data()})).filter(r => r.visibility!=='private' || r.authorUid===currentUser.uid);
+  let receitas = rSnap.docs.map(d=>({id:d.id,...d.data()})).filter(r => r.visibility!=='private' || r.authorUid===currentUser.uid);
   const dividas  = dSnap.docs.map(d=>({id:d.id,...d.data()}));
+
+  // Soma entradas dos membros da casa (receitas shared)
+  if (_casaMembros && _casaMembros.length) {
+    try {
+      const membrosSnaps = await Promise.all(
+        _casaMembros.map(m => db.collection(`users/${m.uid}/receitas`).where('monthKey','==',cmk).where('visibility','==','shared').get())
+      );
+      membrosSnaps.forEach((snap, i) => {
+        snap.docs.forEach(d => {
+          const r = {id:d.id, ...d.data(), _fromMembro: _casaMembros[i].name||_casaMembros[i].email};
+          if (!receitas.find(x=>x.id===r.id)) receitas.push(r);
+        });
+      });
+    } catch(e) { /* sem permissão */ }
+  }
 
   renderContas(contas);
   renderGastos(gastos);
@@ -1436,6 +1510,54 @@ function openSheetTipo(tipo) {
   }, 300);
 }
 
+// ── DAY PICKER ────────────────────────────────
+let _dpTarget = null;
+function openDayPicker(inputId, btnId) {
+  // Remove popup existente
+  const old = document.getElementById('day-picker-popup');
+  if (old) { old.remove(); if (_dpTarget===inputId) { _dpTarget=null; return; } }
+  _dpTarget = inputId;
+  const btn = $(btnId);
+  const selected = parseInt($(inputId).value) || null;
+  const popup = document.createElement('div');
+  popup.id = 'day-picker-popup';
+  popup.className = 'day-picker-popup';
+  popup.innerHTML = `<div class="dp-title">Dia do vencimento</div>
+    <div class="dp-grid">${Array.from({length:31},(_,i)=>{
+      const d=i+1;
+      return `<button class="dp-day${selected===d?' selected':''}" onclick="selectDay('${inputId}','${btnId}',${d})">${d}</button>`;
+    }).join('')}</div>`;
+  // Posiciona abaixo do botão
+  const rect = btn.getBoundingClientRect();
+  popup.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+  popup.style.left = Math.max(rect.left + window.scrollX, 8) + 'px';
+  document.body.appendChild(popup);
+  setTimeout(()=>document.addEventListener('click', _dpOutside, {once:true, capture:true}), 10);
+}
+function _dpOutside(e) {
+  const p = document.getElementById('day-picker-popup');
+  if (p && !p.contains(e.target)) { p.remove(); _dpTarget=null; }
+}
+function selectDay(inputId, btnId, day) {
+  setDayPicker(inputId, btnId, day);
+  const p = document.getElementById('day-picker-popup');
+  if (p) p.remove();
+  _dpTarget = null;
+}
+function setDayPicker(inputId, btnId, day) {
+  const input = $(inputId), btn = $(btnId);
+  if (!input || !btn) return;
+  if (day) {
+    input.value = day;
+    btn.textContent = `Dia ${day}`;
+    btn.classList.add('has-val');
+  } else {
+    input.value = '';
+    btn.textContent = 'Selecionar dia';
+    btn.classList.remove('has-val');
+  }
+}
+
 function resetSheet(tipo) {
   if (tipo==='gasto') {
     $('gasto-edit-id').value=''; $('gasto-desc').value=''; $('gasto-resp').value=currentUser?.displayName||'';
@@ -1450,13 +1572,13 @@ function resetSheet(tipo) {
     setVal('receita-valor',0); $('sheet-receita-title').textContent='Nova Entrada';
   }
   if (tipo==='conta') {
-    $('conta-edit-id').value=''; $('conta-nome').value=''; $('conta-dia').value='';
+    $('conta-edit-id').value=''; $('conta-nome').value=''; setDayPicker('conta-dia','conta-dia-btn',null);
     $('conta-cat').value='Moradia'; $('conta-status').value='pending';
     setVal('conta-valor',0); $('sheet-conta-title').textContent='Nova Conta Fixa';
   }
   if (tipo==='divida') {
     $('divida-edit-id').value=''; $('divida-desc').value=''; $('divida-resp').value='';
-    $('divida-dia').value=''; $('divida-pagas').value='0'; $('divida-total-parc').value='12';
+    setDayPicker('divida-dia','divida-dia-btn',null); $('divida-pagas').value='0'; $('divida-total-parc').value='12';
     setVal('divida-total',0); setVal('divida-parcela',0);
     $('sheet-divida-title').textContent='Nova Dívida';
   }
@@ -1477,6 +1599,8 @@ async function renderDashboard(contas, gastos, receitas, dividas) {
   const totalD = dividas.filter(d=>(d.pagas||0)<(d.totalParc||1)).reduce((s,d)=>s+(d.parcela||0),0);
   const totalExp = totalG + totalC + totalD;
   const saldo = totalR - totalExp;
+  // Pago: contas marcadas como pagas
+  const totalPago = contas.filter(c=>c.status==='paid').reduce((s,c)=>s+(c.valor||0),0);
 
   const heroEl = $('hero-saldo');
   heroEl.textContent = fmtBRL(saldo);
@@ -1484,6 +1608,7 @@ async function renderDashboard(contas, gastos, receitas, dividas) {
 
   set('hero-receita', fmtBRL(totalR));
   set('hero-despesa', fmtBRL(totalExp));
+  set('hero-pago', fmtBRL(totalPago));
 
   const pct = totalR>0 ? Math.min(Math.round((totalExp/totalR)*100),100) : 0;
   const fill = $('budget-fill');
@@ -1540,6 +1665,8 @@ async function renderDashboard(contas, gastos, receitas, dividas) {
 
   // Gráfico
   await renderChart();
+  // Histórico
+  renderHistorico();
 }
 
 function toggleHeroAccordion(tipo) {
@@ -1547,10 +1674,12 @@ function toggleHeroAccordion(tipo) {
   const arrow = document.getElementById('hero-arrow-' + tipo);
   const isOpen = acc.style.display !== 'none';
 
-  // Fecha os dois primeiro
-  ['entrada','saida'].forEach(t => {
-    document.getElementById('hero-accordion-' + t).style.display = 'none';
-    document.getElementById('hero-arrow-' + t).classList.remove('open');
+  // Fecha todos primeiro
+  ['entrada','saida','pago'].forEach(t => {
+    const el = document.getElementById('hero-accordion-' + t);
+    const ar = document.getElementById('hero-arrow-' + t);
+    if (el) el.style.display = 'none';
+    if (ar) ar.classList.remove('open');
   });
 
   if (isOpen) return; // era aberto → só fecha
@@ -1568,6 +1697,18 @@ function toggleHeroAccordion(tipo) {
         `<div class="hero-acc-item">
           <div><div class="hero-acc-name">${r.desc}</div><div class="hero-acc-sub">${fmtDate(r.data)}</div></div>
           <div class="hero-acc-val" style="color:var(--income)">+${fmtBRL(r.valor)}</div>
+        </div>`).join('');
+    }
+  } else if (tipo === 'pago') {
+    // Contas marcadas como pagas
+    const pagas = (_heroData.contas||[]).filter(c => c.status === 'paid');
+    if (!pagas.length) {
+      html = '<div class="text-muted" style="padding:8px 0;font-size:13px">Nenhuma conta paga este mês</div>';
+    } else {
+      html = pagas.map(c =>
+        `<div class="hero-acc-item">
+          <div><div class="hero-acc-name">${c.nome}</div><div class="hero-acc-sub">${c.categoria} · dia ${c.dia||'?'}</div></div>
+          <div class="hero-acc-val" style="color:var(--dourado)">✓ ${fmtBRL(c.valor)}</div>
         </div>`).join('');
     }
   } else {
@@ -1624,30 +1765,105 @@ async function renderChart() {
     while(m<0){m+=12;y--;}
     months.push({key:mk(y,m),label:MONTHS[m].slice(0,3)});
   }
-  const saldos = [];
+  // Busca contas e dívidas uma vez (são recorrentes mensais)
+  const [contasSnap, dividasSnap] = await Promise.all([col('contas').get(), col('dividas').get()]);
+  const tCbase = contasSnap.docs.reduce((s,d)=>s+(d.data().valor||0),0);
+  const tDbase = dividasSnap.docs.map(d=>d.data()).filter(d=>(d.pagas||0)<(d.totalParc||1)).reduce((s,d)=>s+(d.parcela||0),0);
+
+  const entradasArr=[], saidasArr=[], saldosArr=[];
   for (const m of months) {
-    const [g,r,c,dv] = await Promise.all([
+    const [gSnap,rSnap] = await Promise.all([
       col('gastos').where('monthKey','==',m.key).get(),
       col('receitas').where('monthKey','==',m.key).get(),
-      col('contas').get(),
-      col('dividas').get(),
     ]);
-    const tG=g.docs.reduce((s,d)=>s+(d.data().valor||0),0);
-    const tR=r.docs.reduce((s,d)=>s+(d.data().valor||0),0);
-    const tC=c.docs.reduce((s,d)=>s+(d.data().valor||0),0);
-    const tD=dv.docs.map(d=>d.data()).filter(d=>(d.pagas||0)<(d.totalParc||1)).reduce((s,d)=>s+(d.parcela||0),0);
-    saldos.push(tR-tG-tC-tD);
+    const tG=gSnap.docs.reduce((s,d)=>s+(d.data().valor||0),0);
+    const tR=rSnap.docs.reduce((s,d)=>s+(d.data().valor||0),0);
+    const tExp=tG+tCbase+tDbase;
+    entradasArr.push(tR);
+    saidasArr.push(tExp);
+    saldosArr.push(tR-tExp);
   }
   const ctx=$('chart-canvas')?.getContext('2d');
   if (!ctx) return;
   if (_chart) _chart.destroy();
-  const grad=ctx.createLinearGradient(0,0,0,150);
-  grad.addColorStop(0,'rgba(0,201,177,.2)'); grad.addColorStop(1,'rgba(0,201,177,0)');
+  const gradSaldo=ctx.createLinearGradient(0,0,0,160);
+  gradSaldo.addColorStop(0,'rgba(0,201,177,.15)'); gradSaldo.addColorStop(1,'rgba(0,201,177,0)');
   _chart = new Chart(ctx,{
     type:'line',
-    data:{ labels:months.map(m=>m.label), datasets:[{ label:'Saldo', data:saldos, borderColor:'#00C9B1', borderWidth:2.5, pointBackgroundColor:'#00C9B1', pointRadius:4, fill:true, backgroundColor:grad, tension:.4 }] },
-    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#18181d', borderColor:'#26262f', borderWidth:1, callbacks:{label:c=>fmtBRL(c.raw)} } }, scales:{ x:{ticks:{color:'#5c5a58',font:{size:11}},grid:{color:'#1f1f26'}}, y:{ticks:{color:'#5c5a58',font:{size:11},callback:v=>fmtBRL(v)},grid:{color:'#1f1f26'}} } }
+    data:{
+      labels:months.map(m=>m.label),
+      datasets:[
+        { label:'Entrada', data:entradasArr, borderColor:'#00C9B1', borderWidth:2, pointBackgroundColor:'#00C9B1', pointRadius:3, fill:false, tension:.4 },
+        { label:'Saída',   data:saidasArr,   borderColor:'#E05A6A', borderWidth:2, pointBackgroundColor:'#E05A6A', pointRadius:3, fill:false, tension:.4 },
+        { label:'Saldo',   data:saldosArr,   borderColor:'#D4A84B', borderWidth:2.5, pointBackgroundColor:'#D4A84B', pointRadius:4, fill:true, backgroundColor:gradSaldo, tension:.4 },
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ display:true, labels:{ color:'#8a8880', font:{size:11}, boxWidth:12, padding:16 } },
+        tooltip:{ backgroundColor:'#18181d', borderColor:'#26262f', borderWidth:1, callbacks:{ label:c=>`${c.dataset.label}: ${fmtBRL(c.raw)}` } }
+      },
+      scales:{
+        x:{ ticks:{color:'#5c5a58',font:{size:11}}, grid:{color:'#1f1f26'} },
+        y:{ ticks:{color:'#5c5a58',font:{size:11},callback:v=>fmtBRL(v)}, grid:{color:'#1f1f26'} }
+      }
+    }
   });
+}
+
+// ── HISTÓRICO MENSAL ──────────────────────────
+async function renderHistorico() {
+  const el = $('historico-list');
+  if (!el) return;
+  const months = [];
+  for (let i=5;i>=0;i--) {
+    let m=currentMonth-i, y=currentYear;
+    while(m<0){m+=12;y--;}
+    months.push({key:mk(y,m), label:`${MONTHS[m].slice(0,3)} ${y}`, m, y});
+  }
+  const [contasSnap, dividasSnap] = await Promise.all([col('contas').get(), col('dividas').get()]);
+  const tCbase = contasSnap.docs.reduce((s,d)=>s+(d.data().valor||0),0);
+  const tDbase = dividasSnap.docs.map(d=>d.data()).filter(d=>(d.pagas||0)<(d.totalParc||1)).reduce((s,d)=>s+(d.parcela||0),0);
+
+  const rows = [];
+  for (const m of months) {
+    const [gSnap,rSnap] = await Promise.all([
+      col('gastos').where('monthKey','==',m.key).get(),
+      col('receitas').where('monthKey','==',m.key).get(),
+    ]);
+    const tR = rSnap.docs.reduce((s,d)=>s+(d.data().valor||0),0);
+    const tG = gSnap.docs.reduce((s,d)=>s+(d.data().valor||0),0);
+    const tExp = tG + tCbase + tDbase;
+    const saldo = tR - tExp;
+    const isCurrent = m.m===currentMonth && m.y===currentYear;
+    rows.push({label:m.label, tR, tExp, saldo, isCurrent, key:m.key});
+  }
+
+  el.innerHTML = rows.reverse().map(r => {
+    const cor = r.saldo>=0?'var(--turquesa)':'var(--expense)';
+    const border = r.isCurrent?'border:1px solid var(--turquesa);':'';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r-sm);background:var(--surface2);margin-bottom:8px;${border}cursor:pointer"
+      onclick="navegarParaMes('${r.key}')">
+      <div style="min-width:64px;font-size:13px;font-weight:${r.isCurrent?'700':'500'};color:${r.isCurrent?'var(--turquesa)':'var(--text2)'}">${r.label}</div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3)">
+          <span style="color:var(--income)">▲ ${fmtBRL(r.tR)}</span>
+          <span style="color:var(--expense)">▼ ${fmtBRL(r.tExp)}</span>
+        </div>
+        <div style="height:3px;background:var(--border);border-radius:99px;overflow:hidden">
+          <div style="height:100%;width:${r.tR>0?Math.min(Math.round((r.tExp/r.tR)*100),100):100}%;background:${cor};border-radius:99px"></div>
+        </div>
+      </div>
+      <div style="font-family:var(--font-display);font-size:14px;font-weight:700;color:${cor};min-width:72px;text-align:right">${fmtBRL(r.saldo)}</div>
+    </div>`;
+  }).join('');
+}
+
+function navegarParaMes(key) {
+  const [y,m] = key.split('-').map(Number);
+  currentYear = y; currentMonth = m-1;
+  updateMonthLabel(); loadAll();
 }
 
 // ── CONTAS ────────────────────────────────────
@@ -1689,7 +1905,7 @@ async function editConta(id) {
   const d=(await col('contas').doc(id).get()).data();
   $('sheet-conta-title').textContent='Editar Conta';
   $('conta-edit-id').value=id; $('conta-nome').value=d.nome||'';
-  $('conta-cat').value=d.categoria||'Moradia'; $('conta-dia').value=d.dia||'';
+  $('conta-cat').value=d.categoria||'Moradia'; setDayPicker('conta-dia','conta-dia-btn',d.dia||null);
   $('conta-status').value=d.status||'pending'; setVal('conta-valor',d.valor||0);
   abrirSheet('sheet-conta');
 }
@@ -1852,7 +2068,7 @@ async function editDivida(id) {
   $('sheet-divida-title').textContent='Editar Dívida';
   $('divida-edit-id').value=id; $('divida-desc').value=d.desc||'';
   $('divida-pagas').value=d.pagas||0; $('divida-total-parc').value=d.totalParc||12;
-  $('divida-dia').value=d.dia||''; $('divida-resp').value=d.resp||'';
+  setDayPicker('divida-dia','divida-dia-btn',d.dia||null); $('divida-resp').value=d.resp||'';
   setVal('divida-total',d.total||0); setVal('divida-parcela',d.parcela||0);
   abrirSheet('sheet-divida');
 }
