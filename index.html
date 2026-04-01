@@ -1472,24 +1472,9 @@ async function loadAll() {
     col('dividas').get(),
   ]);
   const contas   = cSnap.docs.map(d=>({id:d.id,...d.data()}));
-  const gastos   = gSnap.docs.map(d=>({id:d.id,...d.data()})).filter(g => g.visibility!=='private' || g.authorUid===currentUser.uid);
-  let receitas = rSnap.docs.map(d=>({id:d.id,...d.data()})).filter(r => r.visibility!=='private' || r.authorUid===currentUser.uid);
+  const gastos   = gSnap.docs.map(d=>({id:d.id,...d.data()}));
+  const receitas = rSnap.docs.map(d=>({id:d.id,...d.data()}));
   const dividas  = dSnap.docs.map(d=>({id:d.id,...d.data()}));
-
-  // Soma entradas dos membros da casa (receitas shared)
-  if (_casaMembros && _casaMembros.length) {
-    try {
-      const membrosSnaps = await Promise.all(
-        _casaMembros.map(m => db.collection(`users/${m.uid}/receitas`).where('monthKey','==',cmk).where('visibility','==','shared').get())
-      );
-      membrosSnaps.forEach((snap, i) => {
-        snap.docs.forEach(d => {
-          const r = {id:d.id, ...d.data(), _fromMembro: _casaMembros[i].name||_casaMembros[i].email};
-          if (!receitas.find(x=>x.id===r.id)) receitas.push(r);
-        });
-      });
-    } catch(e) { /* sem permissão */ }
-  }
 
   renderContas(contas);
   renderGastos(gastos);
