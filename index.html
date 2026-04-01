@@ -123,13 +123,14 @@ input, select, textarea { font-family: var(--font-body); outline: none; }
 }
 
 /* APP */
-#app { display: none; flex-direction: column; min-height: 100vh; }
+#app { display: none; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
 #app.active { display: flex; }
 
 /* TOPBAR */
 .topbar {
   position: sticky; top: 0; z-index: 50;
-  padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; padding-top: calc(14px + env(safe-area-inset-top, 0px));
+  display: flex; align-items: center; justify-content: space-between;
   background: rgba(8,8,9,.9); backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
 }
@@ -176,24 +177,25 @@ input, select, textarea { font-family: var(--font-body); outline: none; }
 
 /* MAIN */
 .main {
-  flex: 1; padding: 20px 20px calc(var(--bar-h) + env(safe-area-inset-bottom, 0px) + 24px);
+  flex: 1; padding: 20px 20px calc(var(--bar-h) + env(safe-area-inset-bottom, 0px) + 32px);
   max-width: 600px; margin: 0 auto; width: 100%;
 }
 
 /* BOTTOM BAR */
 .bottom-bar {
-  position: fixed; bottom: 0; left: 0; right: 0; height: var(--bar-h);
-  z-index: 50; background: rgba(17,17,20,.96);
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: calc(var(--bar-h) + env(safe-area-inset-bottom, 0px));
+  z-index: 100; background: rgba(17,17,20,.96);
   backdrop-filter: blur(24px); border-top: 1px solid var(--border);
-  display: flex; align-items: center; padding: 0 4px;
+  display: flex; align-items: flex-start; padding: 0 2px;
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .bar-item {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 4px;
-  padding: 8px 4px; color: var(--text3); font-size: 10px; font-weight: 500;
+  flex: 1; min-width: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3px;
+  padding: 8px 2px; color: var(--text3); font-size: 9px; font-weight: 500;
   cursor: pointer; border-radius: var(--r-sm); transition: all .2s;
-  text-transform: uppercase; letter-spacing: .04em;
+  text-transform: uppercase; letter-spacing: .03em; overflow: hidden;
 }
 .bar-item.active { color: var(--turquesa); }
 .bar-item.active svg { filter: drop-shadow(0 0 5px rgba(0,201,177,.4)); }
@@ -209,7 +211,7 @@ input, select, textarea { font-family: var(--font-body); outline: none; }
 /* FAB */
 .fab {
   position: fixed; right: 20px;
-  bottom: calc(var(--bar-h) + env(safe-area-inset-bottom, 0px) + 12px);
+  bottom: calc(var(--bar-h) + env(safe-area-inset-bottom, 0px) + 16px);
   width: 54px; height: 54px; border-radius: 16px;
   background: var(--turquesa); color: #080809; font-size: 24px;
   z-index: 40; display: flex; align-items: center; justify-content: center;
@@ -617,7 +619,6 @@ input, select, textarea { font-family: var(--font-body); outline: none; }
           <span id="budget-pct">—</span>
         </div>
         <div class="budget-bar"><div class="budget-fill ok" id="budget-fill" style="width:0%"></div></div>
-        <div class="forecast-badge" id="forecast-badge" style="display:none">🔮 <strong id="forecast-val">—</strong></div>
       </div>
 
       <div id="alerts-container"></div>
@@ -1462,9 +1463,34 @@ function updateMonthLabel() {
 }
 
 // ── LOAD ALL ──────────────────────────────────
+async function ensureSalarioDoMes(cmk) {
+  if (!currentUser) return;
+  try {
+    const userDoc = await db.collection('users').doc(currentUser.uid).get();
+    const data = userDoc.data() || {};
+    if (!data.salarioVal || data.salarioTipo !== 'mensal') return;
+    const existing = await col('receitas')
+      .where('monthKey','==',cmk).where('tipo','==','salario_auto').get();
+    if (!existing.empty) return;
+    const nome = currentUser.displayName || 'Eu';
+    const [y, m] = cmk.split('-').map(Number);
+    const dataStr = `${y}-${String(m).padStart(2,'0')}-01`;
+    await col('receitas').add({
+      desc: `Salário — ${nome}`, valor: data.salarioVal,
+      categoria: 'Salário', data: dataStr, resp: nome,
+      monthKey: cmk, tipo: 'salario_auto',
+      authorUid: currentUser.uid, visibility: 'private',
+      createdAt: new Date().toISOString(),
+    });
+  } catch(e) { /* silencia */ }
+}
+
 async function loadAll() {
   if (!currentUser) return;
   const cmk = curMk();
+
+  await ensureSalarioDoMes(cmk);
+
   const [cSnap, gSnap, rSnap, dSnap] = await Promise.all([
     col('contas').get(),
     col('gastos').where('monthKey','==',cmk).get(),
@@ -1601,13 +1627,6 @@ async function renderDashboard(contas, gastos, receitas, dividas) {
   fill.className = 'budget-fill ' + (pct<70?'ok':pct<90?'warn':'bad');
   set('budget-pct', pct+'%');
   set('budget-label', `${fmtBRL(totalExp)} de ${fmtBRL(totalR)}`);
-
-  // Previsão
-  const pendente = contas.filter(c=>c.status!=='paid').reduce((s,c)=>s+(c.valor||0),0);
-  const forecast = totalR - totalExp - pendente;
-  const fb = $('forecast-badge');
-  if (totalR>0) { fb.style.display='inline-flex'; set('forecast-val', fmtBRL(forecast)); }
-  else fb.style.display='none';
 
   // Alertas
   renderAlertas(gastos);
