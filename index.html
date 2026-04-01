@@ -1162,30 +1162,7 @@ a { color: inherit; text-decoration: none; }
           <span id="admin-badge" style="display:none;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:3px 8px;border-radius:99px;background:rgba(212,168,75,.15);color:var(--dourado2)">Admin</span>
         </div>
         <div id="members-list"></div>
-        <!-- Painel admin -->
-        <div id="admin-panel" style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:16px">
-          <div class="form-label" style="margin-bottom:10px">Gerenciar grupo</div>
-          <!-- Regenerar código -->
-          <div style="background:var(--surface2);border-radius:var(--r-sm);padding:12px;margin-bottom:10px">
-            <div style="font-size:13px;font-weight:500;margin-bottom:8px">Código de convite</div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--turquesa);letter-spacing:4px;flex:1" id="admin-invite-code">——</div>
-              <button class="btn btn-ghost btn-sm" onclick="copyInviteCode()">Copiar</button>
-              <button class="btn btn-ghost btn-sm" onclick="regenerarCodigo()">↺ Novo</button>
-            </div>
-          </div>
-          <!-- Lista membros com controle -->
-          <div class="form-label" style="margin-bottom:8px">Remover membro</div>
-          <div id="admin-members-list"></div>
-          <!-- Criar grupo -->
-          <div style="margin-top:12px">
-            <div class="form-label" style="margin-bottom:8px">Criar novo grupo</div>
-            <div style="display:flex;gap:8px">
-              <input id="admin-group-name" class="form-input" placeholder="Nome do grupo" style="flex:1"/>
-              <button class="btn btn-primary btn-sm" onclick="criarGrupo()">Criar</button>
-            </div>
-          </div>
-        </div>
+
       </div>
 
       <!-- Dívidas rápido -->
@@ -1268,6 +1245,26 @@ a { color: inherit; text-decoration: none; }
   <button class="fab" onclick="openFab()">＋</button>
 
 </div><!-- /app -->
+
+
+<!-- Sheet: Compartilhar lançamento -->
+<div class="sheet-bg" id="sheet-share-bg"></div>
+<div class="sheet" id="sheet-share">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">Compartilhar lançamento</div>
+  <input type="hidden" id="share-tipo"/>
+  <input type="hidden" id="share-id"/>
+  <input type="hidden" id="share-desc"/>
+  <input type="hidden" id="share-valor"/>
+  <div style="background:var(--surface2);border-radius:var(--r);padding:14px;margin-bottom:16px">
+    <div style="font-size:12px;color:var(--text3);margin-bottom:4px">Lançamento</div>
+    <div style="font-weight:600" id="share-preview-desc">—</div>
+    <div style="font-family:var(--font-display);font-size:20px;color:var(--expense);margin-top:4px" id="share-preview-valor">—</div>
+  </div>
+  <div class="form-label" style="margin-bottom:10px">Compartilhar com</div>
+  <div id="share-members-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px"></div>
+  <button class="btn btn-primary btn-full" onclick="confirmarCompartilhar()">Compartilhar ↗</button>
+</div>
 
 <!-- ═══ TOAST ════════════════════════════════════ -->
 <div id="toast"></div>
@@ -2202,6 +2199,7 @@ function renderGastos(data) {
         <div class="item-amount text-expense">${fmtBRL(g.valor)}</div>
       </div>
       <div class="item-actions" onclick="event.stopPropagation()">
+        <button class="btn-icon" title="Compartilhar" onclick="compartilharLancamento('gasto','${g.id}','${g.desc}',${g.valor})">↗</button>
         <button class="btn-icon" onclick="editGasto('${g.id}')">✎</button>
         <button class="btn-icon" onclick="deleteGasto('${g.id}')">✕</button>
       </div>
@@ -3758,6 +3756,87 @@ async function salvarSalario() {
   } else {
     toast('Salário mensal salvo ✓', 'success');
   }
+}
+
+
+// ── COMPARTILHAR LANÇAMENTO ───────────────────
+let _shareSelectedUids = [];
+
+function compartilharLancamento(tipo, id, desc, valor) {
+  _shareSelectedUids = [];
+  document.getElementById('share-tipo').value  = tipo;
+  document.getElementById('share-id').value    = id;
+  document.getElementById('share-desc').value  = desc;
+  document.getElementById('share-valor').value = valor;
+  document.getElementById('share-preview-desc').textContent  = desc;
+  document.getElementById('share-preview-valor').textContent = fmtBRL(valor);
+
+  // Lista membros do grupo exceto o próprio usuário
+  const membros = (window._groupMembers || []).filter(m => m.uid !== currentUser.uid);
+  const el = document.getElementById('share-members-list');
+  if (!membros.length) {
+    el.innerHTML = '<div class="text-muted">Nenhum outro membro no grupo ainda</div>';
+  } else {
+    el.innerHTML = membros.map(m => `
+      <div style="display:flex;align-items:center;gap:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px;cursor:pointer"
+           id="share-member-${m.uid}" onclick="toggleShareMember('${m.uid}')">
+        <div style="width:36px;height:36px;border-radius:12px;background:var(--turquesa3);color:var(--turquesa);display:flex;align-items:center;justify-content:center;font-weight:700">
+          ${m.name.charAt(0)}
+        </div>
+        <div style="flex:1;font-weight:500">${m.name}</div>
+        <div id="share-check-${m.uid}" style="width:20px;height:20px;border-radius:50%;border:2px solid var(--border);transition:all .2s"></div>
+      </div>`).join('');
+  }
+
+  openSheet('sheet-share');
+}
+
+function toggleShareMember(uid) {
+  const idx = _shareSelectedUids.indexOf(uid);
+  const checkEl = document.getElementById(`share-check-${uid}`);
+  const cardEl  = document.getElementById(`share-member-${uid}`);
+  if (idx >= 0) {
+    _shareSelectedUids.splice(idx, 1);
+    if (checkEl) { checkEl.style.background = ''; checkEl.style.borderColor = 'var(--border)'; }
+    if (cardEl)  cardEl.style.borderColor = 'var(--border)';
+  } else {
+    _shareSelectedUids.push(uid);
+    if (checkEl) { checkEl.style.background = 'var(--turquesa)'; checkEl.style.borderColor = 'var(--turquesa)'; }
+    if (cardEl)  cardEl.style.borderColor = 'var(--turquesa)';
+  }
+}
+
+async function confirmarCompartilhar() {
+  if (!_shareSelectedUids.length) return toast('Selecione pelo menos uma pessoa', 'error');
+
+  const tipo  = document.getElementById('share-tipo').value;
+  const id    = document.getElementById('share-id').value;
+  const desc  = document.getElementById('share-desc').value;
+  const valor = parseFloat(document.getElementById('share-valor').value) || 0;
+
+  // Busca o lançamento original
+  const collName = tipo === 'gasto' ? 'gastos' : tipo === 'receita' ? 'receitas' : 'contas';
+  const origDoc  = await col(collName).doc(id).get();
+  if (!origDoc.exists) return toast('Lançamento não encontrado', 'error');
+
+  const origData = origDoc.data();
+
+  // Copia para cada membro selecionado
+  let count = 0;
+  for (const uid of _shareSelectedUids) {
+    const targetCol = db.collection(`users/${uid}/${collName}`);
+    await targetCol.add({
+      ...origData,
+      sharedBy:   currentUser.displayName || 'Alguém',
+      sharedFrom: currentUser.uid,
+      sharedAt:   new Date().toISOString(),
+      visibility: 'shared',
+    });
+    count++;
+  }
+
+  closeSheet('sheet-share');
+  toast(`Compartilhado com ${count} pessoa${count > 1 ? 's' : ''} ✓`, 'success');
 }
 
 </script>
