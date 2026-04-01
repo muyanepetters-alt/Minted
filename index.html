@@ -940,7 +940,18 @@ a { color: inherit; text-decoration: none; }
       <span class="month-label" id="month-label">—</span>
       <button class="month-nav" onclick="changeMonth(1)">›</button>
     </div>
-    <div id="topbar-avatar-wrap"></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div id="notif-bell" style="position:relative;cursor:pointer" onclick="toggleNotificacoes()">
+        <span style="font-size:20px">🔔</span>
+        <span id="notif-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--marsala2);color:white;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;display:none;align-items:center;justify-content:center" id="notif-count">0</span>
+      </div>
+      <div id="topbar-avatar-wrap"></div>
+    </div>
+    <!-- Dropdown notificações -->
+    <div id="notif-dropdown" style="display:none;position:fixed;top:60px;right:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;width:300px;z-index:200;box-shadow:var(--shadow-lg)">
+      <div style="font-weight:600;font-size:14px;margin-bottom:12px">Notificações</div>
+      <div id="notif-list"><div class="text-muted">Nenhuma notificação</div></div>
+    </div>
   </div>
 
   <!-- MAIN -->
@@ -1087,12 +1098,27 @@ a { color: inherit; text-decoration: none; }
 
     <!-- ──────────────── PLANNER ─────────────── -->
     <div id="panel-planner" class="panel">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
         <div>
-          <div class="section-title">Planejador Semanal</div>
-          <div class="text-muted" id="planner-week-label2">Semana atual</div>
+          <div class="section-title" id="planner-main-title">Planejador</div>
+          <div class="text-muted" id="planner-week-label2">—</div>
         </div>
         <span style="font-size:28px">📅</span>
+      </div>
+      <!-- Toggle Semanal / Mensal -->
+      <div style="display:flex;gap:0;background:var(--surface2);border-radius:var(--r-sm);padding:4px;margin-bottom:16px">
+        <button id="planner-tab-semanal" onclick="setPlannerView('semanal')"
+          style="flex:1;padding:9px;border:none;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;background:var(--turquesa);color:#080809">
+          📆 Semanal
+        </button>
+        <button id="planner-tab-mensal" onclick="setPlannerView('mensal')"
+          style="flex:1;padding:9px;border:none;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;background:transparent;color:var(--text3)">
+          📅 Mensal
+        </button>
+      </div>
+      <!-- Aviso para quem é mensal no modo semanal -->
+      <div id="planner-mensal-aviso" style="display:none;background:var(--dourado3);border:1px solid rgba(212,168,75,.2);border-radius:var(--r);padding:14px;margin-bottom:14px;font-size:13px;color:var(--dourado2)">
+        💡 Você recebe mensalmente. O modo semanal é para quem recebe por semana. Veja sua visão no <strong>Mensal</strong>.
       </div>
       <!-- Informar ganho -->
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;margin-bottom:12px">
@@ -1142,6 +1168,45 @@ a { color: inherit; text-decoration: none; }
         <div style="font-weight:600;color:var(--dourado2);margin-bottom:4px">🏆 Desafio da semana</div>
         <div id="planner-desafio-text2" style="color:var(--text2)">—</div>
       </div>
+
+      <!-- ── VISÃO MENSAL ── -->
+      <div id="planner-view-mensal" style="display:none">
+        <!-- Resumo mensal -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-bottom:12px">
+          <div class="form-label" style="margin-bottom:14px">Resumo do mês</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+            <div style="background:var(--surface2);border-radius:var(--r-sm);padding:12px">
+              <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Entrou</div>
+              <div style="font-family:var(--font-display);font-size:18px;color:var(--turquesa)" id="planner-m-entrou">R$ 0,00</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:var(--r-sm);padding:12px">
+              <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Saiu</div>
+              <div style="font-family:var(--font-display);font-size:18px;color:var(--expense)" id="planner-m-saiu">R$ 0,00</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:var(--r-sm);padding:12px">
+              <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Sobra</div>
+              <div style="font-family:var(--font-display);font-size:18px;" id="planner-m-sobra">R$ 0,00</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:var(--r-sm);padding:12px">
+              <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">A pagar</div>
+              <div style="font-family:var(--font-display);font-size:18px;color:var(--dourado)" id="planner-m-apagar">R$ 0,00</div>
+            </div>
+          </div>
+          <!-- Barra mensal -->
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:6px">
+            <span>Comprometido do salário</span><span id="planner-m-pct">0%</span>
+          </div>
+          <div style="height:6px;background:var(--surface3);border-radius:99px;overflow:hidden">
+            <div id="planner-m-bar" style="height:100%;border-radius:99px;background:linear-gradient(90deg,var(--turquesa2),var(--turquesa));width:0%;transition:width .8s"></div>
+          </div>
+        </div>
+        <!-- Conselho mensal -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;font-size:13px">
+          <div style="font-weight:600;margin-bottom:6px">💡 Análise do mês</div>
+          <div id="planner-m-conselho" style="color:var(--text2);line-height:1.6">—</div>
+        </div>
+      </div>
+
     </div>
 
     <!-- ──────────────── PERFIL ──────────────── -->
@@ -2098,6 +2163,7 @@ function renderContas(data) {
         <span class="tag tag-${c.status || 'pending'}">${statusLabel(c.status)}</span>
       </div>
       <div class="item-actions" onclick="event.stopPropagation()">
+        <button class="btn-icon" title="Compartilhar" onclick="compartilharLancamento('conta','${c.id}','${c.nome}',${c.valor})">↗</button>
         <button class="btn-icon" onclick="toggleContaStatus('${c.id}','${c.status}')">✓</button>
         <button class="btn-icon" onclick="editConta('${c.id}')">✎</button>
         <button class="btn-icon" onclick="deleteConta('${c.id}')">✕</button>
@@ -2193,6 +2259,7 @@ function renderGastos(data) {
         <div class="item-meta">
           ${g.categoria}${g.resp ? ' · ' + g.resp : ''} · ${fmtDate(g.data)}
           ${privBadge}
+          ${g.sharedBy ? `<span style="font-size:10px;color:var(--turquesa)">↗ de ${g.sharedBy}</span>` : ''}
         </div>
       </div>
       <div class="item-right">
@@ -2975,6 +3042,7 @@ async function showApp() {
   document.getElementById('topbar-avatar-wrap').innerHTML = topbarAvatarHtml(currentUser);
 
   await loadAll();
+  carregarNotificacoes();
 }
 
 // ── USER INIT ─────────────────────────────────
@@ -3094,7 +3162,7 @@ function switchPanel(panel) {
 
   if (panel === 'calendario') renderCalendarPanel();
   if (panel === 'perfil') { renderPerfil(); loadSalarioConfig(); }
-    if (panel === 'planner') { renderPlanner2(); }
+    if (panel === 'planner') { renderPlanner2(); setPlannerView(window._plannerView || 'semanal'); }
 }
 
 // ── MÊS ───────────────────────────────────────
@@ -3655,6 +3723,9 @@ async function renderPlanner2() {
 
   const input = document.getElementById('planner-ganho-input2');
   if (input && ganhoAtual) input.value = ganhoAtual;
+
+  // Se visão mensal ativa, renderiza dados mensais
+  if (window._plannerView === 'mensal') await renderPlannerMensal();
 }
 
 
@@ -3737,24 +3808,52 @@ async function salvarSalario() {
   const val = parseFloat(document.getElementById(inputId)?.value) || 0;
   if (!val) return toast('Informe o valor', 'error');
 
+  // Salva configuração do usuário
   await db.collection('users').doc(currentUser.uid).update({
     salarioTipo: tipo,
     salarioVal:  val,
   });
 
-  // Se mensal, NÃO alimenta o planner semanal
-  // Se semanal, salva também como ganho padrão do planner
-  if (tipo === 'semanal') {
+  const mk = monthKey(currentYear, currentMonth);
+  const dataHoje = today();
+
+  if (tipo === 'mensal') {
+    // Cria receita mensal automaticamente
+    await col('receitas').add({
+      desc:      'Salário',
+      valor:     val,
+      categoria: 'Salário',
+      data:      dataHoje,
+      resp:      currentUser.displayName || 'Eu',
+      monthKey:  mk,
+      authorUid: currentUser.uid,
+      auto:      true,
+      createdAt: new Date().toISOString(),
+    });
+    toast('Salário mensal salvo e adicionado às receitas ✓', 'success');
+    loadAll();
+
+  } else {
+    // Semanal: cria receita da semana + alimenta planner
     const wk = getWeekNumber();
-    const mk = monthKey(currentYear, currentMonth);
+    await col('receitas').add({
+      desc:      `Salário semana ${wk}`,
+      valor:     val,
+      categoria: 'Salário',
+      data:      dataHoje,
+      resp:      currentUser.displayName || 'Eu',
+      monthKey:  mk,
+      authorUid: currentUser.uid,
+      auto:      true,
+      createdAt: new Date().toISOString(),
+    });
     await db.collection('users').doc(currentUser.uid).collection('planner')
       .doc(`${mk}_w${wk}`).set({
         ganho: val, semana: wk, monthKey: mk,
         uid: currentUser.uid, updatedAt: new Date().toISOString()
       }, { merge: true });
-    toast('Salário semanal salvo e adicionado ao Planner ✓', 'success');
-  } else {
-    toast('Salário mensal salvo ✓', 'success');
+    toast('Salário semanal salvo nas receitas e no Planner ✓', 'success');
+    loadAll();
   }
 }
 
@@ -3835,9 +3934,181 @@ async function confirmarCompartilhar() {
     count++;
   }
 
+    // Notificação para cada membro
+  for (const uid of _shareSelectedUids) {
+    try {
+      await db.collection('users').doc(uid).collection('notificacoes').add({
+        tipo: 'compartilhamento',
+        de:   currentUser.displayName || 'Alguém',
+        deUid: currentUser.uid,
+        desc:  document.getElementById('share-desc').value,
+        valor: parseFloat(document.getElementById('share-valor').value) || 0,
+        lida:  false,
+        createdAt: new Date().toISOString(),
+      });
+    } catch(e) { console.log('Notif erro:', e); }
+  }
+
   closeSheet('sheet-share');
   toast(`Compartilhado com ${count} pessoa${count > 1 ? 's' : ''} ✓`, 'success');
+  loadAll();
+  carregarNotificacoes();
 }
+
+
+// ── PLANNER VIEW TOGGLE ───────────────────────
+window._plannerView = 'semanal';
+
+async function setPlannerView(view) {
+  window._plannerView = view;
+
+  const tabS = document.getElementById('planner-tab-semanal');
+  const tabM = document.getElementById('planner-tab-mensal');
+  const semanal_els = [
+    'planner-ganho-input2', 'planner-guardar2', 'planner-pct-sugerido2',
+    'planner-alerta2', 'planner-prog-bar2', 'planner-prog-pct2',
+    'planner-guardado-val2', 'planner-falta-val2', 'planner-projecao-text2',
+    'planner-semanas2', 'planner-envelopes2', 'planner-desafio2'
+  ];
+
+  // Atualiza tabs
+  if (tabS) { tabS.style.background = view === 'semanal' ? 'var(--turquesa)' : 'transparent'; tabS.style.color = view === 'semanal' ? '#080809' : 'var(--text3)'; }
+  if (tabM) { tabM.style.background = view === 'mensal' ? 'var(--turquesa)' : 'transparent'; tabM.style.color = view === 'mensal' ? '#080809' : 'var(--text3)'; }
+
+  // Mostra/esconde seções
+  const mensalView = document.getElementById('planner-view-mensal');
+  const avisoEl    = document.getElementById('planner-mensal-aviso');
+  const titleEl    = document.getElementById('planner-main-title');
+
+  // Verifica tipo de salário do usuário
+  const userDoc = await db.collection('users').doc(currentUser.uid).get();
+  const salTipo = (userDoc.data() || {}).salarioTipo || 'mensal';
+
+  if (view === 'semanal') {
+    if (titleEl) titleEl.textContent = 'Planejador Semanal';
+    if (mensalView) mensalView.style.display = 'none';
+    // Mostra aviso se for mensal
+    if (avisoEl) avisoEl.style.display = salTipo === 'mensal' ? 'block' : 'none';
+    // Mostra campos semanais
+    semanal_els.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el.parentElement) el.parentElement.style.display = '';
+      if (el) el.style.display = '';
+    });
+  } else {
+    if (titleEl) titleEl.textContent = 'Planejador Mensal';
+    if (mensalView) mensalView.style.display = 'block';
+    if (avisoEl) avisoEl.style.display = 'none';
+    await renderPlannerMensal();
+  }
+}
+
+async function renderPlannerMensal() {
+  const mk = monthKey(currentYear, currentMonth);
+
+  const [recSnap, contasSnap, gastosSnap, dividasSnap] = await Promise.all([
+    col('receitas').where('monthKey','==',mk).get(),
+    col('contas').get(),
+    col('gastos').where('monthKey','==',mk).get(),
+    col('dividas').get(),
+  ]);
+
+  const totalEntrou  = recSnap.docs.reduce((s,d) => s+(d.data().valor||0), 0);
+  const totalContas  = contasSnap.docs.reduce((s,d) => s+(d.data().valor||0), 0);
+  const totalGastos  = gastosSnap.docs.reduce((s,d) => s+(d.data().valor||0), 0);
+  const totalDividas = dividasSnap.docs.reduce((s,d) => s+(d.data().parcela||0), 0);
+  const totalSaiu    = totalContas + totalGastos + totalDividas;
+  const totalPendente = contasSnap.docs.filter(d => d.data().status !== 'paid').reduce((s,d) => s+(d.data().valor||0), 0);
+  const sobra        = totalEntrou - totalSaiu;
+  const pct          = totalEntrou > 0 ? Math.min(Math.round((totalSaiu/totalEntrou)*100),100) : 0;
+
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+  set('planner-m-entrou', fmtBRL(totalEntrou));
+  set('planner-m-saiu',   fmtBRL(totalSaiu));
+  set('planner-m-apagar', fmtBRL(totalPendente));
+
+  const sobraEl = document.getElementById('planner-m-sobra');
+  if (sobraEl) {
+    sobraEl.textContent = fmtBRL(sobra);
+    sobraEl.style.color = sobra >= 0 ? 'var(--turquesa)' : 'var(--expense)';
+  }
+
+  set('planner-m-pct', pct + '%');
+  const bar = document.getElementById('planner-m-bar');
+  if (bar) { bar.style.width = pct + '%'; bar.style.background = pct < 70 ? 'linear-gradient(90deg,var(--turquesa2),var(--turquesa))' : pct < 90 ? 'linear-gradient(90deg,var(--dourado),var(--dourado2))' : 'linear-gradient(90deg,var(--marsala),var(--marsala2))'; }
+
+  // Conselho
+  let conselho = '';
+  if (totalEntrou === 0) {
+    conselho = 'Nenhuma receita registrada ainda. Adicione seu salário no Perfil.';
+  } else if (pct < 50) {
+    conselho = `Ótimo! Você está usando apenas ${pct}% da sua renda. Tem ${fmtBRL(sobra)} disponíveis — considere guardar parte como reserva.`;
+  } else if (pct < 80) {
+    conselho = `Você está usando ${pct}% da renda. Fique de olho nos gastos variáveis para não estourar.`;
+  } else if (pct < 100) {
+    conselho = `⚠️ ${pct}% da renda já comprometida. Ainda faltam ${fmtBRL(totalPendente)} para pagar. Evite novos gastos este mês.`;
+  } else {
+    conselho = `🔴 Despesas ultrapassam a receita em ${fmtBRL(Math.abs(sobra))}. Revise os gastos com urgência.`;
+  }
+  set('planner-m-conselho', conselho);
+
+  const lbl = document.getElementById('planner-week-label2');
+  if (lbl) lbl.textContent = `${MONTH_NAMES[currentMonth]} ${currentYear}`;
+}
+
+
+// ── NOTIFICAÇÕES ─────────────────────────────
+async function carregarNotificacoes() {
+  if (!currentUser) return;
+  const snap = await db.collection('users').doc(currentUser.uid)
+    .collection('notificacoes').where('lida', '==', false)
+    .orderBy('createdAt', 'desc').limit(10).get();
+
+  const notifs = snap.docs.map(d => ({id: d.id, ...d.data()}));
+  const badge  = document.getElementById('notif-badge');
+  const count  = document.getElementById('notif-count');
+
+  if (badge) {
+    badge.style.display = notifs.length ? 'flex' : 'none';
+    if (count) count.textContent = notifs.length;
+  }
+
+  const list = document.getElementById('notif-list');
+  if (list) {
+    list.innerHTML = notifs.length ? notifs.map(n => `
+      <div style="padding:10px;background:var(--surface2);border-radius:var(--r-sm);margin-bottom:8px;font-size:13px;cursor:pointer"
+           onclick="marcarNotifLida('${n.id}')">
+        <div style="font-weight:500">↗ ${n.de} compartilhou um lançamento</div>
+        <div style="color:var(--text3);margin-top:2px">${n.desc} · ${fmtBRL(n.valor)}</div>
+        <div style="color:var(--text3);font-size:10px;margin-top:4px">${fmtDate((n.createdAt||'').slice(0,10))}</div>
+      </div>`).join('')
+      : '<div class="text-muted">Tudo em dia ✓</div>';
+  }
+}
+
+function toggleNotificacoes() {
+  const dd = document.getElementById('notif-dropdown');
+  if (!dd) return;
+  const isOpen = dd.style.display !== 'none';
+  dd.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) carregarNotificacoes();
+}
+
+async function marcarNotifLida(id) {
+  await db.collection('users').doc(currentUser.uid)
+    .collection('notificacoes').doc(id).update({lida: true});
+  carregarNotificacoes();
+}
+
+// Fecha dropdown ao clicar fora
+document.addEventListener('click', e => {
+  const dd = document.getElementById('notif-dropdown');
+  const bell = document.getElementById('notif-bell');
+  if (dd && bell && !bell.contains(e.target) && !dd.contains(e.target)) {
+    dd.style.display = 'none';
+  }
+});
 
 </script>
 
