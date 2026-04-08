@@ -2508,6 +2508,79 @@ function setCurrencyValue(id, val) {
   el.value = num.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
 }
 
+
+// ══ COMPARTILHAR ══════════════════════════════
+let _shareSelectedUids = [];
+
+function compartilharLancamento(tipo, id, desc, valor) {
+  _shareSelectedUids = [];
+  $('share-tipo').value  = tipo;
+  $('share-id').value    = id;
+  $('share-desc').value  = desc;
+  $('share-valor').value = valor;
+  $('share-preview-desc').textContent  = desc;
+  $('share-preview-valor').textContent = fmtBRL(valor);
+
+  const membros = _casaMembros || [];
+  const el = $('share-members-list');
+  if (!el) return;
+
+  if (!membros.length) {
+    el.innerHTML = '<div class="text-muted">Nenhum outro membro na sua Casa ainda</div>';
+  } else {
+    el.innerHTML = membros.map(m => `
+      <div style="display:flex;align-items:center;gap:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px;cursor:pointer"
+           id="share-card-${m.uid}" onclick="toggleShareMember('${m.uid}')">
+        <div style="width:36px;height:36px;border-radius:12px;background:var(--turquesa3);color:var(--turquesa);display:flex;align-items:center;justify-content:center;font-weight:700">
+          ${(m.name||'?').charAt(0).toUpperCase()}
+        </div>
+        <div style="flex:1;font-weight:500">${m.name||m.email||'—'}</div>
+        <div id="share-check-${m.uid}" style="width:20px;height:20px;border-radius:50%;border:2px solid var(--border);transition:all .2s"></div>
+      </div>`).join('');
+  }
+  abrirSheet('sheet-share');
+}
+
+function toggleShareMember(uid) {
+  const idx = _shareSelectedUids.indexOf(uid);
+  const check = $(`share-check-${uid}`);
+  const card  = $(`share-card-${uid}`);
+  if (idx >= 0) {
+    _shareSelectedUids.splice(idx, 1);
+    if (check) { check.style.background=''; check.style.borderColor='var(--border)'; }
+    if (card)  card.style.borderColor = 'var(--border)';
+  } else {
+    _shareSelectedUids.push(uid);
+    if (check) { check.style.background='var(--turquesa)'; check.style.borderColor='var(--turquesa)'; }
+    if (card)  card.style.borderColor = 'var(--turquesa)';
+  }
+}
+
+async function confirmarCompartilhar() {
+  if (!_shareSelectedUids.length) return toast('Selecione pelo menos uma pessoa', 'error');
+  const tipo  = $('share-tipo').value;
+  const id    = $('share-id').value;
+  const valor = parseFloat($('share-valor').value) || 0;
+  const collName = tipo === 'gasto' ? 'gastos' : tipo === 'receita' ? 'receitas' : 'contas';
+  try {
+    const snap = await col(collName).doc(id).get();
+    if (!snap.exists) return toast('Lançamento não encontrado', 'error');
+    const data = snap.data();
+    for (const uid of _shareSelectedUids) {
+      await db.collection(`users/${uid}/${collName}`).add({
+        ...data,
+        sharedBy:  currentUser.displayName || 'Alguém',
+        sharedFrom: currentUser.uid,
+        sharedAt:  new Date().toISOString(),
+        visibility: 'shared',
+      });
+    }
+    fecharSheet('sheet-share');
+    toast(`Compartilhado com ${_shareSelectedUids.length} pessoa(s) ✓`, 'success');
+    loadAll();
+  } catch(e) { toast('Erro ao compartilhar', 'error'); console.error(e); }
+}
+
 </script>
 </body>
 </html>
